@@ -1,0 +1,122 @@
+{
+ "add_total_row": 0,
+ "columns": [
+  {
+   "fieldname": "voucher_type",
+   "fieldtype": "Link",
+   "label": "Voucher Type",
+   "options": "DocType",
+   "width": 0
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date",
+   "width": 120
+  },
+  {
+   "fieldname": "voucher_no",
+   "fieldtype": "Dynamic Link",
+   "label": "Voucher No",
+   "options": "voucher_type",
+   "width": 140
+  },
+  {
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "label": "Account",
+   "options": "voucher_type.party",
+   "width": 180
+  },
+  {
+   "fieldname": "debit",
+   "fieldtype": "Currency",
+   "label": "Debit",
+   "width": 120
+  },
+  {
+   "fieldname": "credit",
+   "fieldtype": "Currency",
+   "label": "Credit",
+   "width": 120
+  },
+  {
+   "fieldname": "against",
+   "fieldtype": "Data",
+   "label": "Against",
+   "width": 120
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Data",
+   "label": "Remarks",
+   "width": 150
+  }
+ ],
+ "creation": "2025-01-31 18:49:19.863193",
+ "disable_prepared_report": 1,
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [
+  {
+   "default": "Today",
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date",
+   "mandatory": 1,
+   "options": "",
+   "wildcard_filter": 0
+  },
+  {
+   "default": "Today",
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date",
+   "mandatory": 1,
+   "wildcard_filter": 0
+  },
+  {
+   "default": "",
+   "fieldname": "transaction_types",
+   "fieldtype": "Select",
+   "label": "Transaction Types",
+   "mandatory": 1,
+   "options": "\nAll\nCash Receipt\nCash Payment",
+   "wildcard_filter": 0
+  }
+ ],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": "Virtu",
+ "modified": "2025-01-31 19:14:00.237346",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "Cash Book",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "GL Entry",
+ "report_name": "Cash Book",
+ "report_script": "# my_custom_app.my_custom_app.report.daily_activity_report.daily_activity_report.py\r\n#import frappe\r\n\r\ndef get_conditions(filters, doctype):\r\n    conditions = []\r\n\r\n    if filters.get(\"from_date\"):\r\n        conditions.append(f\"`tab{doctype}`.posting_date >= %(from_date)s\")\r\n    if filters.get(\"to_date\"):\r\n        conditions.append(f\"`tab{doctype}`.posting_date <= %(to_date)s\")\r\n\r\n    if doctype == \"Journal Entry\":\r\n        conditions.append(\"`tabJournal Entry`.is_opening = 0\")\r\n\r\n    return \" AND \".join(conditions)\r\n\r\n\r\ndef get_account_type_from_name(account_name):\r\n    try:\r\n        account_doc = frappe.get_doc(\"Account\", account_name)\r\n        account_type = account_doc.account_type\r\n        return account_type\r\n    except frappe.DoesNotExistError:\r\n        return None\r\n\r\n\r\ndef get_data(filters):\r\n    data = []\r\n    sum_debit_and_credit = \"\"\"\r\n                    SELECT\r\n                        SUM(CASE WHEN `tabGL Entry`.debit > 0 THEN `tabGL Entry`.debit ELSE 0 END) AS total_debit,\r\n                        SUM(CASE WHEN `tabGL Entry`.credit > 0 THEN `tabGL Entry`.credit ELSE 0 END) AS total_credit\r\n                    FROM\r\n                        `tabGL Entry`\r\n                    WHERE\r\n                        `tabGL Entry`.is_cancelled = 0\r\n                        AND `tabGL Entry`.posting_date < '{start_date}'\r\n                        AND (SELECT `account_type` FROM `tabAccount` WHERE `name` = `tabGL Entry`.account) = 'Cash'\r\n                \"\"\".format(start_date=filters.get(\"from_date\"))\r\n    cash_receipt = \"\"\"SELECT\r\n\t\t\t\t\t\t`tabGL Entry`.posting_date,\r\n\t\t\t\t\t\t`tabGL Entry`.account as party,\r\n\t\t\t\t\t\t`tabGL Entry`.party_type,\r\n\t\t\t\t\t\t`tabGL Entry`.voucher_no,\r\n\t\t\t\t\t\t`tabGL Entry`.debit,\r\n\t\t\t\t\t\t`tabGL Entry`.credit,\r\n\t\t\t\t\t\t`tabGL Entry`.against,\r\n\t\t\t\t\t\t`tabGL Entry`.remarks\r\n\t\t\t\t\tFROM\r\n\t\t\t\t\t\t`tabGL Entry`\r\n\t\t\t\t\tWHERE\r\n\t\t\t\t\t\t{conditions} AND `tabGL Entry`.is_cancelled = 0\r\n\t\t\t\t\t\tAND `tabGL Entry`.debit >0\r\n\t\t\t\t\t\tAND (SELECT `account_type` FROM `tabAccount` WHERE `name` = `tabGL Entry`.account) ='Cash'\r\n\t\t\t\t\t\"\"\".format(conditions=get_conditions(filters, \"GL Entry\"))\r\n\r\n    cash_payment = \"\"\"SELECT\r\n\t\t\t\t\t\t`tabGL Entry`.posting_date,\r\n\t\t\t\t\t\t`tabGL Entry`.account as party,\r\n\t\t\t\t\t\t`tabGL Entry`.party_type,\r\n\t\t\t\t\t\t`tabGL Entry`.voucher_no,\r\n\t\t\t\t\t\t`tabGL Entry`.debit,\r\n\t\t\t\t\t\t`tabGL Entry`.credit,\r\n\t\t\t\t\t\t`tabGL Entry`.against,\r\n\t\t\t\t\t\t`tabGL Entry`.remarks\r\n\t\t\t\t\tFROM\r\n\t\t\t\t\t\t`tabGL Entry`\r\n\t\t\t\t\tWHERE\r\n\t\t\t\t\t\t{conditions} AND `tabGL Entry`.is_cancelled = 0\r\n\t\t\t\t\t\tAND `tabGL Entry`.credit >0\r\n\t\t\t\t\t\tAND (SELECT `account_type` FROM `tabAccount` WHERE `name` = `tabGL Entry`.account) ='Cash'\r\n\t\t\t\t\"\"\".format(conditions=get_conditions(filters, \"GL Entry\"))\r\n\r\n    sum_debit_and_credit_result = frappe.db.sql(sum_debit_and_credit, as_dict=1)\r\n    cash_receipt_result = frappe.db.sql(cash_receipt, filters, as_dict=1)\r\n    cash_payment_result = frappe.db.sql(cash_payment, filters, as_dict=1)\r\n\r\n    # ====================OPENING BALANCE ROW====================#\r\n    opening_balance_dict = [{'voucher_type': '<b>OPENING BALANCE</b>', 'posting_date': '', 'voucher_no': '',\r\n                                 'party': '', 'debit': '', 'credit': '','remarks':''\r\n                                 }]\r\n    opening_balance_dict[0]['debit'] = sum_debit_and_credit_result[0]['total_debit']\r\n    opening_balance_dict[0]['credit'] = sum_debit_and_credit_result[0]['total_credit']\r\n    opening_balance_dict[0]['remarks'] = sum_debit_and_credit_result[0]['total_debit'] - sum_debit_and_credit_result[0]['total_credit']\r\n\r\n    # ====================CALCULATING TOTAL IN CASH RECEIVED====================\r\n    cash_receipt_header_dict = [{'voucher_type': '<b><u>Cash Receipt</b></u>', 'posting_date': '', 'voucher_no': '',\r\n                                 'party': '', 'debit': '', 'credit': ''\r\n                                 }]\r\n    cash_receipt_total_dict = {'voucher_type': '<b>Sum</b>', 'posting_date': '-------', 'voucher_no': '-------',\r\n                               'party': '-------', 'debit': None, 'credit': 0,\r\n                               'remarks': '--------------'}\r\n    debit = 0\r\n    for index, cr in enumerate(cash_receipt_result):\r\n        debit += cr.debit\r\n        cash_receipt_result[index][\r\n            'party'] = f\"{cash_receipt_result[index]['party']}  {' / ' + cash_receipt_result[index]['party_type'] if cash_receipt_result[index]['party_type'] else ''} {' / ' + cash_receipt_result[index]['party'] if cash_receipt_result[index]['party'] else ''}\"\r\n\r\n    cash_receipt_total_dict['debit'] = debit\r\n    cash_receipt_result = opening_balance_dict + cash_receipt_header_dict + cash_receipt_result\r\n    cash_receipt_result.append(cash_receipt_total_dict)\r\n    # ====================CALCULATING TOTAL IN CASH RECEIVED END====================\r\n\r\n    # ====================CALCULATING TOTAL IN CASH PAID====================\r\n    cash_payment_header_dict = [{'voucher_type': '<b><u>Cash Payment</b></u>', 'posting_date': '', 'voucher_no': '',\r\n                                 'party': '', 'debit': '', 'credit': ''\r\n                                 }]\r\n    cash_payment_total_dict = {'voucher_type': '<b>Sum</b>', 'posting_date': '-------', 'voucher_no': '-------',\r\n                               'party': '-------', 'debit': None, 'credit': 0,\r\n                               'remarks': '--------------'}\r\n    credit = 0\r\n    for index, cr in enumerate(cash_payment_result):\r\n        credit += cr.credit\r\n        cash_payment_result[index][\r\n            'party'] = f\"{cash_payment_result[index]['party']}  {' / ' + cash_payment_result[index]['party_type'] if cash_payment_result[index]['party_type'] else ''} {' / ' + cash_payment_result[index]['party'] if cash_payment_result[index]['party'] else ''}\"\r\n\r\n    cash_payment_total_dict['credit'] = credit\r\n    cash_payment_result =  cash_payment_header_dict + cash_payment_result\r\n    cash_payment_result.append(cash_payment_total_dict)\r\n    # ====================CALCULATING TOTAL IN CASH PAID END====================\r\n    # ====================BALANCE====================\r\n    cash_payment_total_dict = {'voucher_type': '<b>BALANCE</b>', 'posting_date': '', 'voucher_no': '',\r\n                               'party': '', 'debit': debit + sum_debit_and_credit_result[0]['total_debit'], 'credit': credit + sum_debit_and_credit_result[0]['total_credit'],\r\n                               'remarks': f\"<b>{(debit + sum_debit_and_credit_result[0]['total_debit']) - (credit + sum_debit_and_credit_result[0]['total_credit'])}</b>\"}\r\n\r\n    cash_payment_result.append(cash_payment_total_dict)\r\n    # ====================BALANCE END====================\r\n\r\n    #\r\n    # ====================TRANSACTION TYPE FILTER====================\r\n    if filters.get('transaction_types') == \"All\":\r\n        data.extend(cash_receipt_result)\r\n        data.extend(cash_payment_result)\r\n    if 'Cash Receipt' in filters.get('transaction_types'):\r\n        data.extend(cash_receipt_result)\r\n    if 'Cash Payment' in filters.get('transaction_types'):\r\n        data.extend(cash_payment_result)\r\n        # ====================FILTERS END====================\r\n\r\n    return data",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "Production Manager"
+  },
+  {
+   "role": "Accounts User"
+  },
+  {
+   "role": "Auditor"
+  },
+  {
+   "role": "Accounts Manager"
+  },
+  {
+   "role": "Accounts Executive"
+  },
+  {
+   "role": "System Manager"
+  }
+ ]
+}

@@ -1,0 +1,152 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "field:order_type",
+ "creation": "2026-07-11 14:28:48.685442",
+ "default_view": "List",
+ "description": "Order Type for Restaurant",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": [
+  "gs",
+  "order_type",
+  "is_table_required",
+  "is_delivery",
+  "is_take_away",
+  "image",
+  "disable"
+ ],
+ "fields": [
+  {
+   "fieldname": "gs",
+   "fieldtype": "Section Break",
+   "label": "General Settings"
+  },
+  {
+   "fieldname": "order_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Order Type",
+   "oldfieldname": "item_group_name",
+   "oldfieldtype": "Data",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "hidden": 1,
+   "label": "Image"
+  },
+  {
+   "default": "0",
+   "fieldname": "disable",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Disable"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_table_required",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Is Table Required"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_delivery",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Is Delivery"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_take_away",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Is Take Away"
+  }
+ ],
+ "hide_toolbar": 1,
+ "icon": "fa fa-sitemap",
+ "image_field": "image",
+ "links": [],
+ "max_attachments": 3,
+ "modified": "2026-07-12 03:59:07.600648",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "Order Type",
+ "naming_rule": "By fieldname",
+ "nsm_parent_field": "parent_item_group",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Stock Manager"
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Stock User"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "import": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Item Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User"
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Purchase User"
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "report": 1,
+   "role": "Desk User",
+   "select": 1,
+   "share": 1
+  }
+ ],
+ "show_name_in_global_search": 1,
+ "show_preview_popup": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

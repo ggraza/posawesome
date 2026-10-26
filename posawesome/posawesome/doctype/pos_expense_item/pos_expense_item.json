@@ -1,0 +1,82 @@
+{
+ "actions": [],
+ "creation": "2024-09-26 13:48:54.499627",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "pos_expenses",
+  "expense_description",
+  "qty",
+  "rate",
+  "amount",
+  "invoice_no"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "pos_expenses",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "POS Expense",
+   "options": "POS Expense Head",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "expense_description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Expense Description"
+  },
+  {
+   "columns": 1,
+   "default": "1",
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "QTY",
+   "precision": "0"
+  },
+  {
+   "columns": 1,
+   "fieldname": "invoice_no",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Invoice No"
+  },
+  {
+   "columns": 1,
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate",
+   "options": "company:company_currency",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Amount",
+   "options": "company:company_currency",
+   "read_only": 1,
+   "reqd": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-02-01 20:47:45.601000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Expense Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

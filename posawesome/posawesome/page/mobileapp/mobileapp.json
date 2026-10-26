@@ -1,0 +1,35 @@
+{
+ "content": null,
+ "creation": "2024-07-11 15:46:00.153816",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2024-07-11 15:46:42.948215",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "mobileapp",
+ "owner": "Administrator",
+ "page_name": "mobileapp",
+ "roles": [
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "Sales Manager"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Accounts Manager"
+  },
+  {
+   "role": "Accounts User"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "App G2Virtu"
+}

@@ -1,0 +1,190 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-07-22 17:17:21.296658",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "series",
+  "opening_balance",
+  "posting_date",
+  "column_break_dybif",
+  "company",
+  "currency",
+  "user",
+  "narrations_section",
+  "items",
+  "section_break_pydfy",
+  "amended_from",
+  "total_received",
+  "column_break_sxwrf",
+  "total_paid",
+  "cash_in_hand",
+  "section_break_oen5r",
+  "denominations",
+  "column_break_rsdbb",
+  "note",
+  "column_break_no8hb",
+  "closing_amount",
+  "closing_difference"
+ ],
+ "fields": [
+  {
+   "fieldname": "series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "ACC-CC-.YYYY.-"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_dybif",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "opening_balance",
+   "fieldtype": "Currency",
+   "label": "Opening Balance"
+  },
+  {
+   "fieldname": "narrations_section",
+   "fieldtype": "Section Break",
+   "label": "Narrations"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "options": "Cash Counter Closing Accounts"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Cash Counter Closing",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_received",
+   "fieldtype": "Currency",
+   "label": "Total Received",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_sxwrf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_paid",
+   "fieldtype": "Currency",
+   "label": "Total Paid",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_oen5r",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "denominations",
+   "fieldtype": "Table",
+   "options": "Cash Counter Closing Denomination"
+  },
+  {
+   "default": "0",
+   "fieldname": "closing_amount",
+   "fieldtype": "Currency",
+   "label": "Closing Amount",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "closing_difference",
+   "fieldtype": "Currency",
+   "label": "Closing Difference",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_pydfy",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_rsdbb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note"
+  },
+  {
+   "fieldname": "column_break_no8hb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "cash_in_hand",
+   "fieldtype": "Currency",
+   "label": "Total Cash inHand",
+   "options": "currency",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-07-27 13:32:20.647582",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "Cash Counter Closing",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "track_seen": 1
+}

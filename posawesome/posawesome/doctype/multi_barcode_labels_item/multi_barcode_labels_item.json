@@ -1,0 +1,94 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-10-21 22:21:26.766847",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "barcode",
+  "item_code",
+  "item_name",
+  "item_group",
+  "print_qty",
+  "mrp",
+  "sale_rate",
+  "weight",
+  "sale_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "barcode",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Barcode"
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item Code",
+   "options": "Item"
+  },
+  {
+   "fetch_from": "item_code.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name"
+  },
+  {
+   "fetch_from": "item_code.item_group",
+   "fieldname": "item_group",
+   "fieldtype": "Link",
+   "label": "Item Group",
+   "options": "Item Group"
+  },
+  {
+   "columns": 1,
+   "fieldname": "print_qty",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Print QTY"
+  },
+  {
+   "columns": 1,
+   "fieldname": "mrp",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "MRP"
+  },
+  {
+   "columns": 1,
+   "fieldname": "sale_rate",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Sale Rate"
+  },
+  {
+   "columns": 1,
+   "fieldname": "weight",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Weight"
+  },
+  {
+   "columns": 1,
+   "fieldname": "sale_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Sale Amount"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-21 22:47:32.097763",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "Multi Barcode Labels Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

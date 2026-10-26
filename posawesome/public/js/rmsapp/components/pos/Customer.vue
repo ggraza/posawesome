@@ -1,0 +1,208 @@
+<template>
+  <div>
+    <v-autocomplete
+      ref="customerField"
+      density="compact"
+      clearable
+      auto-select-first
+      variant="outlined"
+      color="primary"
+      :label="frappe._('Customer')"
+      v-model="customer"
+      :items="customers"
+      item-title="customer_name"
+      item-value="name"
+      bg-color="white"
+      :no-data-text="__('Customer not found')"
+      hide-details
+      :custom-filter="(itemText, queryText, internal) => customFilter(internal.raw, queryText, itemText)"
+      :disabled="readonly"
+      append-inner-icon="mdi-plus"
+      @click:append-inner="new_customer"
+      prepend-inner-icon="mdi-account-edit"
+      @click:prepend-inner="edit_customer"
+    >
+      <template v-slot:item="{ item, props }">
+        <v-list-item v-bind="props" :title="null">
+          <v-list-item-title
+            class="text-primary text-subtitle-1"
+            v-html="item.raw.customer_name"
+          ></v-list-item-title>
+          <v-list-item-subtitle
+            v-if="item.raw.customer_name != item.raw.name"
+            v-html="`ID: ${item.raw.name}`"
+          ></v-list-item-subtitle>
+          <v-list-item-subtitle
+            v-if="item.raw.tax_id"
+            v-html="`TAX ID: ${item.raw.tax_id}`"
+          ></v-list-item-subtitle>
+          <v-list-item-subtitle
+            v-if="item.raw.email_id"
+            v-html="`Email: ${item.raw.email_id}`"
+          ></v-list-item-subtitle>
+          <v-list-item-subtitle
+            v-if="item.raw.mobile_no"
+            v-html="`Mobile No: ${item.raw.mobile_no}`"
+          ></v-list-item-subtitle>
+          <v-list-item-subtitle
+            v-if="item.raw.primary_address"
+            v-html="`Primary Address: ${item.raw.primary_address}`"
+          ></v-list-item-subtitle>
+        </v-list-item>
+      </template>
+    </v-autocomplete>
+    <div class="mb-8">
+      <UpdateCustomer></UpdateCustomer>
+    </div>
+  </div>
+</template>
+
+<script>
+import { evntBus } from '../../bus';
+import UpdateCustomer from './UpdateCustomer.vue';
+import offlinePos from '../../../offline';
+export default {
+  data: () => ({
+    pos_profile: '',
+    customers: [],
+    selectedCustomer: null,
+    customer: '',
+    readonly: false,
+    customer_info: {},
+  }),
+
+  components: {
+    UpdateCustomer,
+  },
+
+  methods: {
+    customer_blur() {
+      this.$refs.customerField.blur();
+    },
+    shortCustomer(e) {
+      if (e.key === "c" && e.altKey) {
+        e.preventDefault();
+        if (this.$root) {
+          evntBus.$emit('inputBlurTriggered');
+        }
+        this.$refs.customerField.focus();
+      }
+    },
+    get_customer_names() {
+      const vm = this;
+      if (this.customers.length > 0) {
+        return;
+      }
+      if (vm.pos_profile.posa_local_storage && localStorage.customer_storage) {
+        vm.customers = JSON.parse(localStorage.getItem('customer_storage'));
+      }
+      if (offlinePos.enabled && offlinePos.catalog.customerByName.size) {
+        // customers are part of the offline catalogue (IndexedDB)
+        vm.customers = offlinePos.customers();
+        return;
+      }
+      if (offlinePos.useOffline()) return;
+      frappe.call({
+        method: 'posawesome.posawesome.api.posapp.get_customer_names',
+        args: {
+          pos_profile: this.pos_profile.pos_profile,
+        },
+        callback: function (r) {
+          if (r.message) {
+            vm.customers = r.message;
+            console.info('loadCustomers');
+            if (vm.pos_profile.posa_local_storage) {
+              localStorage.setItem('customer_storage', '');
+              localStorage.setItem(
+                'customer_storage',
+                JSON.stringify(r.message)
+              );
+            }
+          }
+        },
+      });
+    },
+    new_customer() {
+      evntBus.$emit('open_update_customer', null);
+    },
+    edit_customer() {
+      evntBus.$emit('open_update_customer', this.customer_info);
+    },
+    customFilter(item, queryText, itemText) {
+      const textOne = item.customer_name
+        ? item.customer_name.toLowerCase()
+        : '';
+      const textTwo = item.tax_id ? item.tax_id.toLowerCase() : '';
+      const textThree = item.email_id ? item.email_id.toLowerCase() : '';
+      const textFour = item.mobile_no ? item.mobile_no.toLowerCase() : '';
+      const textFifth = item.name.toLowerCase();
+      const searchText = queryText.toLowerCase();
+
+      return (
+        textOne.indexOf(searchText) > -1 ||
+        textTwo.indexOf(searchText) > -1 ||
+        textThree.indexOf(searchText) > -1 ||
+        textFour.indexOf(searchText) > -1 ||
+        textFifth.indexOf(searchText) > -1
+      );
+    },
+  },
+
+  computed: {},
+
+  created: function () {
+    evntBus.$on('customerBlurTriggered', this.customer_blur);
+    document.addEventListener("keydown", this.shortCustomer.bind(this));
+    this.$nextTick(function () {
+      evntBus.$on('register_pos_profile', (pos_profile) => {
+        this.pos_profile = pos_profile;
+        this.get_customer_names();
+      });
+      evntBus.$on('payments_register_pos_profile', (pos_profile) => {
+        this.pos_profile = pos_profile;
+        this.get_customer_names();
+      });
+      evntBus.$on('set_customer', (customer) => {
+        this.customer = customer;
+      });
+      evntBus.$on('add_customer_to_list', (customer) => {
+        if (offlinePos.enabled && offlinePos.catalog.customerByName.size) {
+          offlinePos.catalog.applyCustomers([customer]).then(() => {
+            this.customers = offlinePos.customers();
+          });
+          return;
+        }
+        this.customers = this.customers.concat([customer]);
+      });
+      evntBus.$on('set_customer_readonly', (value) => {
+        this.readonly = value;
+      });
+      evntBus.$on('set_customer_info_to_edit', (data) => {
+        this.customer_info = data;
+      });
+      evntBus.$on('fetch_customer_details', () => {
+        this.get_customer_names();
+      });
+      evntBus.$on('offline_catalog_updated', () => {
+        if (offlinePos.enabled && offlinePos.catalog.customerByName.size) this.customers = offlinePos.customers();
+      });
+    });
+  },
+  unmounted() {
+    document.removeEventListener("keydown", this.shortCustomer);
+  },
+
+  watch: {
+    customer(newValue) {
+      if (newValue) {
+        // The v-autocomplete field is filled
+        if (this.$root) {
+          evntBus.$emit('escEventTriggered');
+        }
+        this.$refs.customerField.blur();
+      }
+      evntBus.$emit('update_customer', this.customer);
+    },
+  },
+};
+</script>

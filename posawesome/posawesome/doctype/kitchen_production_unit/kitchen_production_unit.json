@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:production_unit_name",
+ "creation": "2025-11-03 00:12:15.765130",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "production_unit_name",
+  "company",
+  "apply_on",
+  "column_break_3r9vz",
+  "pos_profile",
+  "allow_quick_production",
+  "from_warehouse",
+  "to_warehouse",
+  "section_break_vzjt8",
+  "item_groups",
+  "items"
+ ],
+ "fields": [
+  {
+   "fieldname": "production_unit_name",
+   "fieldtype": "Data",
+   "label": "Production Unit Name",
+   "unique": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_3r9vz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_vzjt8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval:doc.apply_on == 'Item Group' || doc.apply_on == 'Both'",
+   "fieldname": "item_groups",
+   "fieldtype": "Table",
+   "label": "Kitchen Item Groups",
+   "options": "Kitchen Item Groups"
+  },
+  {
+   "fieldname": "apply_on",
+   "fieldtype": "Select",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "label": "Apply On",
+   "options": "\nItem Code\nItem Group\nBoth",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.apply_on == 'Item Code' || doc.apply_on == 'Both'",
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Kitchen Item Detail",
+   "options": "Kitchen Item Detail"
+  },
+  {
+   "depends_on": "allow_quick_production",
+   "fieldname": "from_warehouse",
+   "fieldtype": "Link",
+   "label": "Default Source Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "depends_on": "allow_quick_production",
+   "fetch_from": "pos_profile.warehouse",
+   "fieldname": "to_warehouse",
+   "fieldtype": "Link",
+   "label": "Default Target Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_quick_production",
+   "fieldtype": "Check",
+   "label": "Allow Quick Production"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-27 14:36:26.321300",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "Kitchen Production Unit",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

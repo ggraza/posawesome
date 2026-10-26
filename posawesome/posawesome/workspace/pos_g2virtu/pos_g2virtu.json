@@ -1,0 +1,436 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"O7bTfgG64P\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">RMS - Retail/Restaurant Management System</span>\",\"col\":12}},{\"id\":\"IlQqigUvr7\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"3aOF9E_W8h\",\"type\":\"card\",\"data\":{\"card_name\":\"POS\",\"col\":4}},{\"id\":\"px78FDW2wv\",\"type\":\"card\",\"data\":{\"card_name\":\"POS Expense\",\"col\":4}},{\"id\":\"gVI3m5uqYL\",\"type\":\"card\",\"data\":{\"card_name\":\"Profile\",\"col\":4}},{\"id\":\"l-pf6tg9Nn\",\"type\":\"card\",\"data\":{\"card_name\":\"Shift\",\"col\":4}},{\"id\":\"hR1pLYfTbi\",\"type\":\"card\",\"data\":{\"card_name\":\"Delivery Charges\",\"col\":4}},{\"id\":\"qjTaVtG9X_\",\"type\":\"card\",\"data\":{\"card_name\":\"Offers &amp; Coupons\",\"col\":4}},{\"id\":\"b0OtroDrLn\",\"type\":\"card\",\"data\":{\"card_name\":\"Other\",\"col\":4}},{\"id\":\"y_eCc0zXZA\",\"type\":\"card\",\"data\":{\"card_name\":\"Offlice Controls\",\"col\":4}},{\"id\":\"ZjE-XWIS4v\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"6ejUprRN_q\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Captain\",\"col\":3}},{\"id\":\"koo_O5RmEM\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Live Order Status\",\"col\":3}},{\"id\":\"8uxrtaQK-B\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Kitchen Display System\",\"col\":3}},{\"id\":\"Jn62twNH1S\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"jgEYY4Byxs\",\"type\":\"card\",\"data\":{\"card_name\":\"Kitchen Display\",\"col\":4}},{\"id\":\"3M0YbqmRiQ\",\"type\":\"card\",\"data\":{\"card_name\":\"Floor Management\",\"col\":4}}]",
+ "creation": "2022-11-29 14:33:45.038200",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "retail",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "POS G2Virtu",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS G2Virtu",
+   "link_count": 0,
+   "link_to": "posapp",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "RMS G2Virtu",
+   "link_count": 0,
+   "link_to": "rmsapp",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Mobile G2Virtu",
+   "link_count": 0,
+   "link_to": "mobileapp",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Delivery Charges",
+   "link_count": 1,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Delivery Charges",
+   "link_count": 0,
+   "link_to": "Delivery Charges",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Offers &amp; Coupons",
+   "link_count": 3,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Offers",
+   "link_count": 0,
+   "link_to": "POS Offer",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Coupons",
+   "link_count": 0,
+   "link_to": "POS Coupon",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Referral Code",
+   "link_count": 0,
+   "link_to": "Referral Code",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "RMS App",
+   "link_count": 0,
+   "link_to": "rmsapp",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Profile",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Profile",
+   "link_count": 0,
+   "link_to": "POS Profile",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Expense Head",
+   "link_count": 0,
+   "link_to": "POS Expense Head",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Expense Invoice",
+   "link_count": 0,
+   "link_to": "POS Expense Invoice",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Mode of Denomination",
+   "link_count": 0,
+   "link_to": "Mode of Denomination",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Shift",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Opening Shift",
+   "link_count": 0,
+   "link_to": "POS Opening Shift",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Closing Shift",
+   "link_count": 0,
+   "link_to": "POS Closing Shift",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "RMS App",
+   "link_count": 0,
+   "link_to": "rmsapp",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Offlice Controls",
+   "link_count": 1,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "User Login Activity",
+   "link_count": 0,
+   "link_to": "User Login Activity",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Other",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Employee Attendance",
+   "link_count": 0,
+   "link_to": "Employee Attendance",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Shop Order",
+   "link_count": 0,
+   "link_to": "Shop Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS",
+   "link_count": 3,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "RMS App",
+   "link_count": 0,
+   "link_to": "rmsapp",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sales Invoice",
+   "link_count": 0,
+   "link_to": "Sales Invoice",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Item Prices",
+   "link_count": 0,
+   "link_to": "Item Prices",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Expense",
+   "link_count": 2,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Expense Head",
+   "link_count": 0,
+   "link_to": "POS Expense Head",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Expense Invoice",
+   "link_count": 0,
+   "link_to": "POS Expense Invoice",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kitchen Display",
+   "link_count": 3,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kitchen Production Unit",
+   "link_count": 0,
+   "link_to": "Kitchen Production Unit",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Kitchen Ticket",
+   "link_count": 0,
+   "link_to": "Kitchen Ticket",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Station",
+   "link_count": 0,
+   "link_to": "Station",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Floor Management",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Service Zone",
+   "link_count": 0,
+   "link_to": "Service Zone",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Queue Ticket",
+   "link_count": 0,
+   "link_to": "Queue Ticket",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Order Type",
+   "link_count": 0,
+   "link_to": "Order Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Service Table",
+   "link_count": 0,
+   "link_to": "Service Table",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-10-04 16:25:05.622042",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS G2Virtu",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 9.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Kitchen Display System",
+   "link_to": "kds",
+   "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Captain",
+   "link_to": "waiterapp",
+   "type": "Page"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Live Order Status",
+   "link_to": "los",
+   "type": "Page"
+  }
+ ],
+ "title": "POS G2Virtu"
+}

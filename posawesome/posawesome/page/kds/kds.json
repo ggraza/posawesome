@@ -1,0 +1,33 @@
+{
+ "content": null,
+ "creation": "2025-11-03 18:00:48.947054",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2025-11-03 18:01:18.226721",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "kds",
+ "owner": "Administrator",
+ "page_name": "kds",
+ "roles": [
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "Sales Manager"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Accounts Manager"
+  },
+  {}
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Kitchen Display System"
+}

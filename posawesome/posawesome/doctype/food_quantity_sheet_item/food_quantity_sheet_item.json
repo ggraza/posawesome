@@ -1,0 +1,360 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2025-07-17 22:08:43.525186",
+ "default_view": "List",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "barcode",
+  "has_item_scanned",
+  "item_code",
+  "col_break1",
+  "item_name",
+  "description_section",
+  "description",
+  "item_group",
+  "brand",
+  "column_break_sr6lg",
+  "uom",
+  "stock_uom",
+  "default_bom",
+  "image_section",
+  "image",
+  "image_view",
+  "quantity_and_rate",
+  "standard_per_head_qty",
+  "per_head_qty",
+  "oh",
+  "column_break_n6a6f",
+  "qty",
+  "stock_qty",
+  "section_break_17",
+  "bom_cost",
+  "price_list_rate",
+  "base_price_list_rate",
+  "rate_from_bom",
+  "rate",
+  "column_break_tpges",
+  "amount",
+  "oh_amount",
+  "allow_alternative_item",
+  "item_tax_template",
+  "section_break_21",
+  "conversion_factor",
+  "incoming_rate",
+  "col_break5"
+ ],
+ "fields": [
+  {
+   "columns": 1,
+   "fieldname": "barcode",
+   "fieldtype": "Data",
+   "label": "Barcode",
+   "print_hide": 1
+  },
+  {
+   "default": "0",
+   "depends_on": "barcode",
+   "fieldname": "has_item_scanned",
+   "fieldtype": "Check",
+   "label": "Has Item Scanned",
+   "read_only": 1
+  },
+  {
+   "bold": 1,
+   "columns": 1,
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "oldfieldname": "item_code",
+   "oldfieldtype": "Link",
+   "options": "Item",
+   "search_index": 1
+  },
+  {
+   "fieldname": "col_break1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "item_code.item_name",
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "label": "Item Name",
+   "oldfieldname": "item_name",
+   "oldfieldtype": "Data",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "description_section",
+   "fieldtype": "Section Break",
+   "label": "Description"
+  },
+  {
+   "fetch_from": "item_code.description",
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description",
+   "oldfieldname": "description",
+   "oldfieldtype": "Text",
+   "print_hide": 1,
+   "print_width": "200px",
+   "read_only": 1,
+   "width": "200px"
+  },
+  {
+   "columns": 1,
+   "fetch_from": "item_code.item_group",
+   "fieldname": "item_group",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item Group",
+   "oldfieldname": "item_group",
+   "oldfieldtype": "Link",
+   "options": "Item Group",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fetch_from": "item_code.brand",
+   "fieldname": "brand",
+   "fieldtype": "Data",
+   "label": "Brand Name",
+   "oldfieldname": "brand",
+   "oldfieldtype": "Data",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_sr6lg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "UOM",
+   "options": "UOM"
+  },
+  {
+   "columns": 1,
+   "depends_on": "eval:doc.uom != doc.stock_uom",
+   "fetch_from": "item_code.stock_uom",
+   "fieldname": "stock_uom",
+   "fieldtype": "Link",
+   "label": "Stock UOM",
+   "options": "UOM"
+  },
+  {
+   "description": "Default BOM (Bill of Materials), it's a recipe that outlines everything needed to build a specific item",
+   "fetch_from": "item_code.default_bom",
+   "fieldname": "default_bom",
+   "fieldtype": "Link",
+   "label": "Default BOM",
+   "options": "BOM",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "image_section",
+   "fieldtype": "Section Break",
+   "label": "Image"
+  },
+  {
+   "fetch_from": "item_code.image",
+   "fieldname": "image",
+   "fieldtype": "Attach",
+   "hidden": 1,
+   "label": "Image"
+  },
+  {
+   "fetch_from": "item_code.image",
+   "fieldname": "image_view",
+   "fieldtype": "Image",
+   "label": "Image View",
+   "options": "image",
+   "print_hide": 1
+  },
+  {
+   "fieldname": "quantity_and_rate",
+   "fieldtype": "Section Break"
+  },
+  {
+   "columns": 1,
+   "fetch_from": "item_code.custom_standard_per_head_qty",
+   "fieldname": "standard_per_head_qty",
+   "fieldtype": "Float",
+   "label": "Standard Per Head Qty",
+   "read_only": 1
+  },
+  {
+   "bold": 1,
+   "columns": 1,
+   "fieldname": "per_head_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Per Head Qty"
+  },
+  {
+   "columns": 1,
+   "fieldname": "oh",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "OH%"
+  },
+  {
+   "fieldname": "column_break_n6a6f",
+   "fieldtype": "Column Break"
+  },
+  {
+   "bold": 1,
+   "columns": 1,
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Total Order Qty",
+   "oldfieldname": "qty",
+   "oldfieldtype": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stock_qty",
+   "fieldtype": "Float",
+   "label": "Stock Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_17",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fetch_from": "default_bom.custom_average_item_cost",
+   "fieldname": "bom_cost",
+   "fieldtype": "Currency",
+   "label": "Cost on BOM (Stock UOM)",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "price_list_rate",
+   "fieldtype": "Currency",
+   "label": "Price List Rate",
+   "oldfieldname": "ref_rate",
+   "oldfieldtype": "Currency",
+   "options": "currency",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "base_price_list_rate",
+   "fieldtype": "Currency",
+   "label": "Price List Rate (Company Currency)",
+   "oldfieldname": "base_ref_rate",
+   "oldfieldtype": "Currency",
+   "options": "Company:company:default_currency",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "bold": 1,
+   "columns": 1,
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Rate",
+   "oldfieldname": "export_rate",
+   "oldfieldtype": "Currency",
+   "options": "currency",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_tpges",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "oldfieldname": "export_amount",
+   "oldfieldtype": "Currency",
+   "options": "currency",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "oh_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "With OH Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "item_code.allow_alternative_item",
+   "fieldname": "allow_alternative_item",
+   "fieldtype": "Check",
+   "label": " Allow Alternative Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_tax_template",
+   "fieldtype": "Link",
+   "label": "Item Tax Template",
+   "options": "Item Tax Template",
+   "print_hide": 1
+  },
+  {
+   "fieldname": "section_break_21",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval:doc.uom != doc.stock_uom",
+   "fieldname": "conversion_factor",
+   "fieldtype": "Float",
+   "label": "UOM Conversion Factor"
+  },
+  {
+   "depends_on": "eval:parent.is_return && parent.update_stock && !parent.return_against",
+   "fieldname": "incoming_rate",
+   "fieldtype": "Currency",
+   "label": "Incoming Rate (Costing)",
+   "no_copy": 1,
+   "options": "Company:company:default_currency",
+   "print_hide": 1
+  },
+  {
+   "fieldname": "col_break5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "rate_from_bom",
+   "fieldtype": "Check",
+   "label": "Rate from BOM"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2025-08-19 13:37:56.177173",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "Food Quantity Sheet Item",
+ "naming_rule": "Random",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

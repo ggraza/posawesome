@@ -1,0 +1,50 @@
+/* kds.css - Kitchen Display System Styles */
+
+.kds-board {
+    min-height: 80vh;
+}
+
+.kds-col {
+    min-height: 70vh;
+    overflow-y: auto;
+    background: #f9f9f9;
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Column header */
+.kds-col::before {
+    content: attr(data-status);
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #4a5568;
+    text-align: center;
+    padding: 0.5rem;
+    background: #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Scrollbar */
+.kds-col::-webkit-scrollbar {
+    width: 6px;
+}
+.kds-col::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+
+/* Card hover effect */
+.kds-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.kds-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}

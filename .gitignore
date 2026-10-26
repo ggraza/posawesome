@@ -1,0 +1,4 @@
+posawesome/public/dist/
+node_modules/
+__pycache__/
+*.pyc

@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customer Display</title>
+
+<style>
+  :root {
+    --bg: #07111f;
+    --bg-2: #0c1728;
+    --panel: rgba(255, 255, 255, 0.075);
+    --panel-solid: #101d30;
+    --panel-soft: rgba(255, 255, 255, 0.045);
+
+    --ink: #f4f8ff;
+    --ink-soft: #8fa1b7;
+    --ink-muted: #64758b;
+
+    --line: rgba(255, 255, 255, 0.085);
+
+    --accent: #20d3b2;
+    --accent-2: #5c8cff;
+    --accent-glow: rgba(32, 211, 178, 0.24);
+
+    --saving: #ff9d5c;
+    --danger: #ff6b81;
+
+    --radius: 20px;
+    --font: Inter, "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+  }
+
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+  }
+
+  body {
+    font-family: var(--font);
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 10% 10%, rgba(32, 211, 178, 0.10), transparent 30%),
+      radial-gradient(circle at 90% 85%, rgba(92, 140, 255, 0.13), transparent 35%),
+      linear-gradient(135deg, var(--bg), var(--bg-2));
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+    background-size: 45px 45px;
+    mask-image: linear-gradient(to bottom, black, transparent 85%);
+    z-index: 0;
+  }
+
+  /* =========================================================
+     IDLE SCREEN
+     ========================================================= */
+
+  #idle {
+    height: 100%;
+    display: none;
+    position: relative;
+    z-index: 1;
+
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+    padding: 4vw;
+
+    background:
+      radial-gradient(circle at center, rgba(32, 211, 178, 0.12), transparent 35%),
+      transparent;
+
+    overflow: hidden;
+  }
+
+  #idle::before {
+    content: "";
+    width: 280px;
+    height: 280px;
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(32, 211, 178, .18);
+    box-shadow:
+      0 0 0 35px rgba(32, 211, 178, .025),
+      0 0 0 70px rgba(32, 211, 178, .018);
+    animation: idlePulse 4s ease-in-out infinite;
+  }
+
+  #idle h1 {
+    position: relative;
+    font-size: clamp(48px, 8vw, 120px);
+    font-weight: 300;
+    letter-spacing: -0.055em;
+    line-height: 1;
+    background: linear-gradient(120deg, #fff 20%, #8ff7e3 80%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  #idle p {
+    position: relative;
+    margin-top: 1.5vw;
+    font-size: clamp(18px, 2vw, 32px);
+    color: var(--ink-soft);
+    letter-spacing: .02em;
+  }
+
+  @keyframes idlePulse {
+    0%, 100% {
+      transform: scale(.95);
+      opacity: .5;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 1;
+    }
+  }
+
+  /* =========================================================
+     ACTIVE DISPLAY
+     ========================================================= */
+
+  #live {
+    height: 100%;
+    position: relative;
+    z-index: 1;
+
+    display: none;
+    grid-template-columns: minmax(0, 1.7fr) minmax(320px, .9fr);
+
+    gap: 1px;
+
+    background: rgba(255, 255, 255, .055);
+  }
+
+  /* =========================================================
+     ORDER LINES
+     ========================================================= */
+
+  .lines {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+
+    padding: 2.5vw 2.8vw 0;
+
+    background:
+      linear-gradient(
+        135deg,
+        rgba(255,255,255,.055),
+        rgba(255,255,255,.018)
+      );
+
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+  }
+
+  .lines-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding-bottom: 1.3vw;
+
+    border-bottom: 1px solid var(--line);
+
+    font-size: clamp(14px, 1.3vw, 21px);
+    color: var(--ink-soft);
+  }
+
+  .lines-head b {
+    display: flex;
+    align-items: center;
+    gap: .7em;
+
+    color: var(--ink);
+    font-size: clamp(20px, 2vw, 32px);
+    font-weight: 650;
+    letter-spacing: -.025em;
+  }
+
+  .lines-head b::before {
+    content: "";
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 16px var(--accent);
+    animation: liveDot 2s ease-in-out infinite;
+  }
+
+  @keyframes liveDot {
+    0%, 100% {
+      opacity: .65;
+      transform: scale(.85);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+  }
+
+  #qtyCount {
+    padding: .35em .8em;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255,255,255,.035);
+  }
+
+  #list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+
+    padding-right: .35vw;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,.15) transparent;
+  }
+
+  #list::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  #list::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #list::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.15);
+    border-radius: 99px;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 4.2ch minmax(0, 1fr) auto;
+    gap: 1.3vw;
+
+    align-items: center;
+
+    padding: 1.2vw .65vw;
+    margin: .15vw 0;
+
+    border-bottom: 1px solid var(--line);
+
+    font-size: clamp(18px, 2vw, 33px);
+
+    border-radius: 12px;
+
+    transition:
+      background .25s ease,
+      transform .25s ease;
+  }
+
+  .row:hover {
+    background: rgba(255,255,255,.035);
+    transform: translateX(3px);
+  }
+
+  .row .qty {
+    color: var(--accent);
+    font-weight: 750;
+    text-shadow: 0 0 18px rgba(32,211,178,.2);
+  }
+
+  .row .name {
+    min-width: 0;
+    font-weight: 520;
+    letter-spacing: -.015em;
+  }
+
+  .row .meta {
+    display: block;
+    margin-top: .28em;
+
+    font-size: .55em;
+    color: var(--ink-soft);
+    font-weight: 400;
+    letter-spacing: .01em;
+  }
+
+  .row .meta.off {
+    color: var(--saving);
+  }
+
+  .row .amt {
+    font-weight: 650;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .row.fresh {
+    animation: freshItem 1.15s ease-out;
+  }
+
+  @keyframes freshItem {
+    0% {
+      background: rgba(32, 211, 178, .18);
+      box-shadow: inset 4px 0 0 var(--accent);
+      transform: translateX(-5px);
+    }
+    100% {
+      background: transparent;
+      box-shadow: inset 0 0 0 transparent;
+      transform: translateX(0);
+    }
+  }
+
+  /* =========================================================
+     SUMMARY PANEL
+     ========================================================= */
+
+  .side {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    padding: 2.5vw 2.4vw;
+
+    background:
+      linear-gradient(
+        160deg,
+        rgba(255,255,255,.085),
+        rgba(255,255,255,.025)
+      );
+
+    border-left: 1px solid var(--line);
+
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+
+    box-shadow: -25px 0 70px rgba(0,0,0,.12);
+  }
+
+  /* Customer/context area */
+
+  .ctx {
+    min-height: 100px;
+
+    padding: 1.1vw 1.3vw;
+
+    border: 1px solid var(--line);
+    border-radius: 16px;
+
+    background: rgba(255,255,255,.035);
+
+    font-size: clamp(14px, 1.25vw, 21px);
+    color: var(--ink-soft);
+    line-height: 1.8;
+
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.035);
+  }
+
+  .ctx strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* Summary */
+
+  .sums {
+    margin-top: auto;
+  }
+
+  .sum {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: .65vw .15vw;
+
+    font-size: clamp(16px, 1.55vw, 25px);
+    color: var(--ink-soft);
+
+    border-bottom: 1px solid rgba(255,255,255,.035);
+  }
+
+  .sum span:last-child {
+    color: var(--ink);
+    font-weight: 550;
+  }
+
+  .sum.saving span:last-child {
+    color: var(--saving);
+  }
+
+  /* Total */
+
+  .total {
+    position: relative;
+    overflow: hidden;
+
+    margin-top: 1.1vw;
+    padding: 1.35vw 1.5vw;
+
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: var(--radius);
+
+    background:
+      linear-gradient(
+        135deg,
+        #13aa94 0%,
+        #087e9a 48%,
+        #315dca 100%
+      );
+
+    color: white;
+
+    box-shadow:
+      0 18px 45px rgba(20, 174, 160, .18),
+      inset 0 1px 0 rgba(255,255,255,.2);
+  }
+
+  .total::before {
+    content: "";
+    position: absolute;
+    width: 220px;
+    height: 220px;
+
+    top: -130px;
+    right: -80px;
+
+    border-radius: 50%;
+
+    background: rgba(255,255,255,.11);
+    filter: blur(2px);
+  }
+
+  .total::after {
+    content: "";
+    position: absolute;
+    width: 120px;
+    height: 120px;
+
+    bottom: -90px;
+    left: -40px;
+
+    border-radius: 50%;
+
+    background: rgba(255,255,255,.07);
+  }
+
+  .total small {
+    position: relative;
+    z-index: 1;
+
+    display: block;
+
+    font-size: clamp(13px, 1.2vw, 20px);
+    font-weight: 500;
+
+    opacity: .82;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+  }
+
+  .total .n {
+    position: relative;
+    z-index: 1;
+
+    margin-top: .08em;
+
+    font-size: clamp(44px, 5.8vw, 100px);
+    font-weight: 750;
+    line-height: 1.05;
+    letter-spacing: -.055em;
+
+    text-shadow: 0 3px 20px rgba(0,0,0,.12);
+  }
+
+  .total .cur {
+    font-size: .38em;
+    font-weight: 500;
+    margin-right: .28em;
+    vertical-align: .18em;
+    opacity: .8;
+    letter-spacing: 0;
+  }
+
+  /* Payment banner */
+
+  #banner {
+    display: none;
+
+    margin-top: .9vw;
+    padding: .8vw 1.1vw;
+
+    border: 1px solid rgba(32,211,178,.55);
+    border-radius: 13px;
+
+    color: #72f3dc;
+
+    background:
+      linear-gradient(
+        135deg,
+        rgba(32,211,178,.11),
+        rgba(32,211,178,.035)
+      );
+
+    font-size: clamp(15px, 1.45vw, 23px);
+    font-weight: 600;
+
+    text-align: center;
+
+    box-shadow:
+      0 0 25px rgba(32,211,178,.06),
+      inset 0 1px 0 rgba(255,255,255,.04);
+
+    animation: bannerGlow 2.5s ease-in-out infinite;
+  }
+
+  @keyframes bannerGlow {
+    0%, 100% {
+      box-shadow:
+        0 0 20px rgba(32,211,178,.04),
+        inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    50% {
+      box-shadow:
+        0 0 30px rgba(32,211,178,.13),
+        inset 0 1px 0 rgba(255,255,255,.08);
+    }
+  }
+
+  /* Status */
+
+  #status {
+    position: fixed;
+    right: 12px;
+    bottom: 8px;
+
+    padding: 4px 8px;
+
+    font-size: 11px;
+    color: rgba(255,255,255,.25);
+
+    z-index: 5;
+  }
+
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+
+  @media (max-width: 1000px) {
+    #live {
+      grid-template-columns: minmax(0, 1.45fr) minmax(280px, .9fr);
+    }
+
+    .lines {
+      padding: 3vw 3vw 0;
+    }
+
+    .side {
+      padding: 3vw 2.5vw;
+    }
+  }
+
+  @media (max-width: 800px) {
+    body {
+      overflow: auto;
+    }
+
+    #live {
+      min-height: 100%;
+      height: 100%;
+      grid-template-columns: 1fr;
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+
+    .lines {
+      padding: 24px 20px 0;
+    }
+
+    .side {
+      padding: 18px 20px 22px;
+      border-left: 0;
+      border-top: 1px solid var(--line);
+      max-height: 48vh;
+    }
+
+    .ctx {
+      min-height: auto;
+      padding: 12px 14px;
+    }
+
+    .sum {
+      padding: 7px 2px;
+    }
+
+    .total {
+      margin-top: 10px;
+      padding: 16px 18px;
+    }
+
+    .row {
+      padding: 13px 5px;
+      gap: 12px;
+    }
+  }
+
+  @media (max-width: 500px) {
+    .lines-head b {
+      font-size: 20px;
+    }
+
+    .row {
+      font-size: 18px;
+    }
+
+    .row .meta {
+      font-size: 10px;
+    }
+
+    .total .n {
+      font-size: 48px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<section id="idle">
+  <h1>Welcome</h1>
+  <p>Your order will appear here</p>
+</section>
+
+<main id="live">
+
+  <section class="lines">
+
+    <div class="lines-head">
+      <b>Your order</b>
+      <span id="qtyCount"></span>
+    </div>
+
+    <div id="list"></div>
+
+  </section>
+
+  <aside class="side">
+
+    <div class="ctx" id="ctx"></div>
+
+    <div class="sums">
+
+      <div class="sum">
+        <span>Subtotal</span>
+        <span id="sSub"></span>
+      </div>
+
+      <div class="sum saving" id="rowItemDisc">
+        <span>Item discounts</span>
+        <span id="sItemDisc"></span>
+      </div>
+
+      <div class="sum saving" id="rowDisc">
+        <span>Discount</span>
+        <span id="sDisc"></span>
+      </div>
+
+      <div class="sum" id="rowDel">
+        <span>Delivery</span>
+        <span id="sDel"></span>
+      </div>
+
+      <div class="total">
+        <small>Total to pay</small>
+
+        <div class="n">
+          <span class="cur" id="cur"></span>
+          <span id="sTotal"></span>
+        </div>
+      </div>
+
+      <div id="banner"></div>
+
+    </div>
+
+  </aside>
+
+</main>
+
+<div id="status">Waiting for POS…</div>
+
+<script>
+(function () {
+
+  var CHANNEL = "posa-customer-display";
+  var STORE_KEY = "posa-customer-display-last";
+
+  var $ = function (id) {
+    return document.getElementById(id);
+  };
+
+  var prevKeys = {};
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(
+      /[&<>"']/g,
+      function (c) {
+        return {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+        }[c];
+      }
+    );
+  }
+
+  function money(n) {
+    return Number(n || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function qtyFmt(n) {
+    n = Number(n || 0);
+
+    return Number.isInteger(n)
+      ? String(n)
+      : n.toFixed(3).replace(/0+$/, "");
+  }
+
+  function render(d) {
+
+    if (!d) return;
+
+    var items = d.items || [];
+    var cur = d.currency || "";
+
+    /* ---------------------------------------------
+       EMPTY / IDLE
+       --------------------------------------------- */
+
+    if (!items.length) {
+
+      $("live").style.display = "none";
+      $("idle").style.display = "flex";
+
+      prevKeys = {};
+
+      return;
+    }
+
+    $("idle").style.display = "none";
+    $("live").style.display = "grid";
+
+    /* ---------------------------------------------
+       ORDER LINES
+       --------------------------------------------- */
+
+    var html = "";
+    var nextKeys = {};
+
+    items.forEach(function (it) {
+
+      var key = it.id + "|" + it.qty;
+
+      nextKeys[key] = true;
+
+      var fresh = !prevKeys[key] ? " fresh" : "";
+
+      var meta = "";
+
+      if (it.uom && it.uom !== "Nos") {
+        meta += esc(it.uom) + " · ";
+      }
+
+      meta += cur + " " + money(it.rate) + " each";
+
+      var extra = "";
+
+      if (it.notes) {
+        extra +=
+          '<span class="meta">' +
+          esc(it.notes.split(",").join(", ")) +
+          "</span>";
+      }
+
+      if (it.discount_amount > 0) {
+        extra +=
+          '<span class="meta off">Saved ' +
+          cur +
+          " " +
+          money(it.discount_amount * it.qty) +
+          "</span>";
+      }
+
+      if (it.is_offer) {
+        extra +=
+          '<span class="meta off">Offer item</span>';
+      }
+
+      html +=
+        '<div class="row' + fresh + '">' +
+
+          '<span class="qty">' +
+            qtyFmt(it.qty) +
+            "×" +
+          "</span>" +
+
+          '<span class="name">' +
+            esc(it.name) +
+            '<span class="meta">' +
+              meta +
+            "</span>" +
+            extra +
+          "</span>" +
+
+          '<span class="amt">' +
+            money(it.amount) +
+          "</span>" +
+
+        "</div>";
+    });
+
+    var list = $("list");
+
+    var grew =
+      Object.keys(nextKeys).length &&
+      Object.keys(nextKeys).some(function (k) {
+        return !prevKeys[k];
+      });
+
+    list.innerHTML = html;
+
+    if (grew) {
+      list.scrollTop = 0;
+    }
+
+    prevKeys = nextKeys;
+
+    /* ---------------------------------------------
+       ITEM COUNT
+       --------------------------------------------- */
+
+    $("qtyCount").textContent =
+      qtyFmt(d.total_qty) +
+      (Number(d.total_qty) === 1 ? " item" : " items");
+
+    /* ---------------------------------------------
+       CUSTOMER / ORDER CONTEXT
+       --------------------------------------------- */
+
+    var ctx = "";
+
+    if (d.customer_name) {
+      ctx +=
+        "Customer: <strong>" +
+        esc(d.customer_name) +
+        "</strong><br>";
+    }
+
+    if (d.order_type) {
+      ctx +=
+        "Order: <strong>" +
+        esc(d.order_type) +
+        "</strong><br>";
+    }
+
+    if (d.service_table) {
+      ctx +=
+        "Table: <strong>" +
+        esc(d.service_table) +
+        "</strong>" +
+        (
+          d.service_zone
+            ? " (" + esc(d.service_zone) + ")"
+            : ""
+        ) +
+        "<br>";
+    }
+
+    if (d.loyalty_points) {
+      ctx +=
+        "Loyalty balance: <strong>" +
+        money(d.loyalty_points) +
+        "</strong><br>";
+    }
+
+    if (d.customer_outstanding) {
+      ctx +=
+        "Previous balance: <strong>" +
+        cur +
+        " " +
+        money(d.customer_outstanding) +
+        "</strong><br>";
+    }
+
+    $("ctx").innerHTML =
+      ctx ||
+      '<span style="color:var(--ink-muted)">Order details</span>';
+
+    /* ---------------------------------------------
+       TOTALS
+       --------------------------------------------- */
+
+    $("sSub").textContent =
+      cur + " " + money(d.gross);
+
+    toggleRow(
+      "rowItemDisc",
+      "sItemDisc",
+      d.items_discount,
+      "- ",
+      cur
+    );
+
+    toggleRow(
+      "rowDisc",
+      "sDisc",
+      d.discount_amount,
+      "- ",
+      cur
+    );
+
+    toggleRow(
+      "rowDel",
+      "sDel",
+      d.delivery_charges,
+      "",
+      cur
+    );
+
+    $("cur").textContent = cur;
+    $("sTotal").textContent = money(d.total);
+
+    /* ---------------------------------------------
+       PAYMENT / STAGE BANNER
+       --------------------------------------------- */
+
+    var b = $("banner");
+
+    if (d.stage === "payment") {
+
+      b.style.display = "block";
+
+      b.textContent =
+        d.payment_method === "card"
+          ? "Ready for card payment"
+          : "Ready for payment";
+
+    } else if (d.stage === "tax") {
+
+      b.style.display = "block";
+      b.textContent = "Choosing payment method…";
+
+    } else {
+
+      b.style.display = "none";
+    }
+  }
+
+  function toggleRow(rowId, valId, v, sign, cur) {
+
+    var show = Number(v) > 0;
+
+    $(rowId).style.display =
+      show ? "flex" : "none";
+
+    if (show) {
+      $(valId).textContent =
+        sign +
+        cur +
+        " " +
+        money(v);
+    }
+  }
+
+  function receive(d) {
+
+    try {
+      localStorage.setItem(
+        STORE_KEY,
+        JSON.stringify(d)
+      );
+    } catch (e) {}
+
+    $("status").textContent = "";
+
+    render(d);
+  }
+
+  /* ---------------------------------------------
+     RESTORE LAST KNOWN STATE
+     --------------------------------------------- */
+
+  try {
+
+    var last =
+      localStorage.getItem(STORE_KEY);
+
+    if (last) {
+      render(JSON.parse(last));
+    } else {
+      render({ items: [] });
+    }
+
+  } catch (e) {
+
+    render({ items: [] });
+  }
+
+  /* ---------------------------------------------
+     BROADCAST CHANNEL
+     --------------------------------------------- */
+
+  if ("BroadcastChannel" in window) {
+
+    var ch =
+      new BroadcastChannel(CHANNEL);
+
+    ch.onmessage = function (e) {
+
+      if (
+        e.data &&
+        e.data.type === "state"
+      ) {
+        receive(e.data.payload);
+      }
+    };
+
+    /* Ask POS to resend current state */
+    ch.postMessage({
+      type: "hello"
+    });
+
+  } else {
+
+    /* -------------------------------------------
+       STORAGE FALLBACK
+       ------------------------------------------- */
+
+    window.addEventListener(
+      "storage",
+      function (e) {
+
+        if (
+          e.key === STORE_KEY &&
+          e.newValue
+        ) {
+          render(
+            JSON.parse(e.newValue)
+          );
+        }
+      }
+    );
+  }
+
+  /* ---------------------------------------------
+     DOUBLE CLICK = FULLSCREEN
+     F11 IS NATIVE BROWSER BEHAVIOR
+     --------------------------------------------- */
+
+  document.addEventListener(
+    "dblclick",
+    function () {
+
+      if (!document.fullscreenElement) {
+
+        if (
+          document.documentElement.requestFullscreen
+        ) {
+          document.documentElement.requestFullscreen();
+        }
+
+      } else {
+
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+  );
+
+})();
+</script>
+
+</body>
+</html>

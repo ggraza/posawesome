@@ -1,0 +1,35 @@
+{
+ "content": null,
+ "creation": "2025-06-27 14:10:37.186558",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2025-06-27 14:10:52.521820",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "soapp",
+ "owner": "Administrator",
+ "page_name": "soapp",
+ "roles": [
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "Sales Manager"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Accounts Manager"
+  },
+  {
+   "role": "Accounts User"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Sales Order"
+}

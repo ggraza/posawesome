@@ -1,0 +1,18 @@
+/* Vuetify 2 helper classes still used in the templates */
+.posa-root .v-application { min-height: 100vh; }
+body.posa-fullscreen { overflow: hidden; }
+.posa-root { position: relative; }
+.posa-root .white--text { color: #fff !important; }
+.posa-root .v-data-table .v-data-table__td,
+.posa-root .v-data-table .v-data-table__th { height: 36px; }
+
+/* Item search results show name / code / price / stock / barcodes on several
+   lines (Vuetify 3 clamps list subtitles to one line). */
+.v-autocomplete__content .v-list-item-subtitle,
+.v-overlay__content .v-list-item-subtitle {
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  display: block;
+  white-space: normal;
+  opacity: 1;
+}
