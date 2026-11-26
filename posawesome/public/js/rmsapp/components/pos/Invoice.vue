@@ -1,5 +1,8 @@
 <template>
   <div>
+    <FineDiningDialogs ref="fdDialogs" />
+    <FloorPlanDialog ref="fdFloor" />
+    <SplitBillDialog ref="fdSplit" />
 
 <v-dialog v-model="itemDialog" max-width="450" persistent>
     <v-card>
@@ -201,7 +204,7 @@
     </v-card>
 </v-dialog>
 
-    <v-dialog v-model="cancel_dialog" max-width="330" @keydown.enter="cancel_invoice">
+    <v-dialog v-model="cancel_dialog" max-width="330" @keydown.enter="fd_run('cancel_invoice')">
       <v-card elevation="8" class="cancel-dialog-card">
         <v-card-title class="cancel-header pa-4">
           <div class="header-content">
@@ -225,7 +228,7 @@
           <v-spacer></v-spacer>
           <v-btn
             color="error"
-            @click="cancel_invoice"
+            @click="fd_run('cancel_invoice')"
             ref="cancelBtn"
             class="pos-action-btn cancel-action-btn"
             prepend-icon="mdi-close-circle"
@@ -544,6 +547,29 @@
         </v-col>
       </v-row>
 
+      <FineDiningBar
+        v-if="fd_bar_visible"
+        :settings="fd_flags"
+        :covers="fd.covers"
+        :seat="fd.seat"
+        :seat-count="fd_seat_count"
+        :courses="fd_course_summary"
+        :busy="fd.busy"
+        :tip="fd.tip"
+        @floor="fd_open_floor"
+        @split="fd_split"
+        @tip="fd_tip"
+        :allergies="fd.allergies"
+        :eighty-six="fd.eighty_six.length"
+        @allergies="fd_edit_allergies"
+        @eighty-six="fd_open_86"
+        :guest="fd.guest"
+        @guest="fd_show_guest"
+        @covers="fd_ask_covers(true)"
+        @seat="(v) => (fd.seat = v)"
+        @fire="fd_fire"
+        @prebill="fd_prebill"
+      />
       <div class="my-0 py-0 overflow-y-auto" style="max-height: 60vh">
         <div @mouseover="style = 'cursor: pointer'">
 <v-data-table
@@ -558,6 +584,24 @@
     @click:row="(event, row) => openItemDialog(row.item, row)"
     return-object
 >
+    <template v-slot:item.item_name="{ item }">
+      <FdRowChips
+        v-if="fd_on"
+        :row="item"
+        :settings="fd_flags"
+        :courses="fd_courses"
+        :seat-count="fd_seat_count"
+        :sent="fd_sent_qty(item)"
+        :has-modifiers="fd_has_modifiers(item)"
+        :allergen="fd_row_alert(item)"
+        @seat="(v) => fd_set_seat(item, v)"
+        @course="(v) => fd_set_course(item, v)"
+        @hold="fd_toggle_hold(item)"
+        @modifiers="fd_edit_modifiers(item)"
+        @comp="fd_comp(item)"
+      />
+      <span v-else>{{ item.item_name }}</span>
+    </template>
     <template v-slot:item.qty="{ item }">
         {{ formtFloat(item.qty) }}
     </template>
@@ -599,6 +643,24 @@
             @click:row="(event, row) => onRowClick(row.item, row)"
             return-object
           >
+            <template v-slot:item.item_name="{ item }">
+              <FdRowChips
+                v-if="fd_on"
+                :row="item"
+                :settings="fd_flags"
+                :courses="fd_courses"
+                :seat-count="fd_seat_count"
+                :sent="fd_sent_qty(item)"
+                :has-modifiers="fd_has_modifiers(item)"
+        :allergen="fd_row_alert(item)"
+                @seat="(v) => fd_set_seat(item, v)"
+                @course="(v) => fd_set_course(item, v)"
+                @hold="fd_toggle_hold(item)"
+                @modifiers="fd_edit_modifiers(item)"
+                @comp="fd_comp(item)"
+              />
+              <span v-else>{{ item.item_name }}</span>
+            </template>
             <template v-slot:item.qty="{ item }">{{
               formtFloat(item.qty)
             }}</template>
@@ -1325,7 +1387,7 @@
                 block
                 class="pa-0"
                 color="accent"
-                @click="new_invoice"
+                @click="fd_run('new_invoice')"
                 ><v-icon start>mdi-content-save</v-icon>{{ __("Hold Sale") }}</v-btn>
             </v-col>
             <v-col
@@ -1337,7 +1399,7 @@
                 block
                 class="pa-0"
                 color="primary"
-                @click="print_draft_invoice"
+                @click="fd_run('print_draft_invoice')"
                 ><v-icon start>mdi-printer</v-icon>{{ __("Print Draft") }}</v-btn>
             </v-col>
             <v-col class="pa-1">
@@ -1345,7 +1407,7 @@
                 block
                 class="pa-0"
                 color="success"
-                @click="show_payment"
+                @click="fd_run('show_payment')"
                 ><v-icon start>mdi-credit-card</v-icon>{{ __("CHECK OUT/PAY") }}</v-btn>
             </v-col>
           </v-row>
@@ -1359,6 +1421,12 @@
 import { toRaw } from "vue";
 import { evntBus } from "../../bus";
 import format from "../../format";
+import fineDining from "../../../shared/fine_dining/mixin.js";
+import FineDiningDialogs from "../../../shared/fine_dining/FineDiningDialogs.vue";
+import FineDiningBar from "../../../shared/fine_dining/FineDiningBar.vue";
+import FdRowChips from "../../../shared/fine_dining/FdRowChips.vue";
+import FloorPlanDialog from "../../../shared/fine_dining/FloorPlanDialog.vue";
+import SplitBillDialog from "../../../shared/fine_dining/SplitBillDialog.vue";
 import Customer from "./Customer.vue";
 import RFIDPopup from './RFIDPopup.vue';
 import offlinePos from "../../../offline";
@@ -1366,7 +1434,7 @@ import vfd from "../../../shared/vfd";
 import { offerMatchesItem } from "../../../offline/offer_targets";
 
 export default {
-  mixins: [format],
+  mixins: [format, fineDining],
   data() {
     return {
       pos_profile: "",
@@ -1472,6 +1540,11 @@ export default {
   components: {
     Customer,
     RFIDPopup,
+    FineDiningDialogs,
+    FineDiningBar,
+    FdRowChips,
+    FloorPlanDialog,
+    SplitBillDialog,
   },
 
   computed: {
@@ -1921,6 +1994,7 @@ minusQty() {
         this.invoice_doc.posa_service_zone = table.service_zone;
         this.invoice_doc.posa_service_table = table.name;
         this.tableDialog = false;
+        this.fd_table_chosen();
     },
     tableColor(table) {
     if (table.status === "Occupied" && table.is_take_away) {
@@ -2235,6 +2309,8 @@ subtract_one(item) {
       return false;
     },
     add_item(item) {
+      // fine dining: a dish marked 86 (unavailable today) cannot be added
+      if (!this.fd_allow_add(item)) return;
       // ?? Force Sales Person mandatory
       if (
         this.pos_profile.posa_sales_person &&
@@ -2262,7 +2338,8 @@ subtract_one(item) {
             el.uom === item.uom &&
             !el.posa_is_offer &&
             !el.posa_is_replace &&
-            el.batch_no === item.batch_no
+            el.batch_no === item.batch_no &&
+            this.fd_can_merge(el, item)
         );
       }
       if (index === -1 || this.new_line) {
@@ -2287,6 +2364,7 @@ subtract_one(item) {
         // changes must go to that one or the cart does not redraw.
         new_item = this.items[0];
         this.update_item_detail(new_item);
+        this.fd_new_row(new_item);
         // restore custom rate AFTER update
         if (item.posa_custom_rate) {
           new_item.rate = flt(item.rate || 0);
@@ -2668,6 +2746,9 @@ if (this.pos_profile.posa_allow_display_mrp) {
       return { class: this.highlight_flip ? "posa-row-changed posa-flash-a" : "posa-row-changed posa-flash-b" };
     },
 
+    fd_is_offline() {
+      return offlinePos.useOffline();
+    },
     current_sale_id() {
       const doc_id = this.invoice_doc && this.invoice_doc.posa_offline_id;
       if (doc_id) this.sale_id = doc_id;
@@ -2707,6 +2788,9 @@ if (this.pos_profile.posa_allow_display_mrp) {
       doc.posa_coupons = this.posa_coupons;
       doc.posa_service_zone = this.selcted_service_zone || "";
       doc.posa_service_table = this.selcted_service_table || "";
+      doc.posa_covers = this.fd.covers || 0;
+      doc.posa_tip_amount = this.fd.tip || 0;
+      doc.posa_allergies = this.fd.allergies || "";
       doc.posa_order_type = this.selcted_order_type || "";
       doc.posa_delivery_charges = this.selcted_delivery_charges.name;
       doc.posa_delivery_charges_rate = this.delivery_charges_rate || 0;
@@ -2813,6 +2897,7 @@ if (this.pos_profile.posa_allow_display_mrp) {
           posa_delivery_date: item.posa_delivery_date,
           price_list_rate: item.price_list_rate,
           custom_rfid_card: item.custom_rfid_card,
+          ...this.fd_item_fields(item),
           maximum_retail_price: item.maximum_retail_price,
           // ?? preserve sales person
           posa_sales_person: item.posa_sales_person || null,
@@ -3324,7 +3409,8 @@ async show_payment() {
 
         if (
           this.pos_profile.posa_max_discount_allowed &&
-          !item.posa_offer_applied
+          !item.posa_offer_applied &&
+          !Number(item.posa_comp)
         ) {
           if (item.discount_amount && this.flt(item.discount_amount) > 0) {
             // calc discount percentage
@@ -3994,7 +4080,7 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
     shortHoldInvoice(e) {
       if (e.key === 'F9' || (e.key === "b" || e.key === "B") && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        this.new_invoice();
+        this.fd_run('new_invoice');
       }
     },
 
@@ -4053,7 +4139,7 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
         if (this.$root) {
           evntBus.$emit('inputBlurTriggered');
         }
-        this.show_payment();
+        this.fd_run('show_payment');
       }
     },
 

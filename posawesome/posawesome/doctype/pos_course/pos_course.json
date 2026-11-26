@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 16:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "course_name",
+  "sequence",
+  "hold_until_fired",
+  "column_break_c1",
+  "color",
+  "disabled",
+  "section_groups",
+  "item_groups",
+  "help_tab",
+  "pos_course_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "course_name",
+   "fieldtype": "Data",
+   "label": "Course",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "sequence",
+   "fieldtype": "Int",
+   "label": "Sequence",
+   "in_list_view": 1,
+   "non_negative": 1,
+   "description": "Order on the ticket and in the Fire buttons: Starters 10, Mains 20, Desserts 30"
+  },
+  {
+   "fieldname": "hold_until_fired",
+   "fieldtype": "Check",
+   "label": "Hold Until Fired",
+   "default": "0",
+   "in_list_view": 1,
+   "description": "Items of this course wait in the order and go to the kitchen only when the waiter presses Fire. Leave off for courses that go at once (drinks, starters)."
+  },
+  {
+   "fieldname": "column_break_c1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "color",
+   "fieldtype": "Color",
+   "label": "Colour",
+   "description": "Chip colour in the POS and on the kitchen display"
+  },
+  {
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled",
+   "default": "0"
+  },
+  {
+   "fieldname": "section_groups",
+   "fieldtype": "Section Break",
+   "label": "Default Course For"
+  },
+  {
+   "fieldname": "item_groups",
+   "fieldtype": "Table MultiSelect",
+   "label": "Item Groups",
+   "options": "POS Course Item Group",
+   "description": "Items of these groups get this course when added to an order. The waiter can change it."
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "pos_course_help",
+   "fieldtype": "HTML",
+   "label": "POS Course Help"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-26 04:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Course",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "sequence",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:course_name",
+ "naming_rule": "By fieldname",
+ "title_field": "course_name",
+ "quick_entry": 0
+}

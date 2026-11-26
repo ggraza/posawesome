@@ -1,5 +1,8 @@
 <template>
   <div>
+    <FineDiningDialogs ref="fdDialogs" />
+    <FloorPlanDialog ref="fdFloor" />
+    <SplitBillDialog ref="fdSplit" />
 
 <v-dialog v-model="itemDialog" max-width="450" persistent>
     <v-card>
@@ -197,7 +200,7 @@
     </v-card>
 </v-dialog>
 
-    <v-dialog v-model="cancel_dialog" max-width="330" @keydown.enter="cancel_invoice">
+    <v-dialog v-model="cancel_dialog" max-width="330" @keydown.enter="fd_run('cancel_invoice')">
       <v-card elevation="8" class="cancel-dialog-card">
         <v-card-title class="cancel-header pa-4">
           <div class="header-content">
@@ -221,7 +224,7 @@
           <v-spacer></v-spacer>
           <v-btn
             color="error"
-            @click="cancel_invoice"
+            @click="fd_run('cancel_invoice')"
             ref="cancelBtn"
             class="pos-action-btn cancel-action-btn"
             prepend-icon="mdi-close-circle"
@@ -523,6 +526,29 @@
         </v-col>
       </v-row>
 
+      <FineDiningBar
+        v-if="fd_bar_visible"
+        :settings="fd_flags"
+        :covers="fd.covers"
+        :seat="fd.seat"
+        :seat-count="fd_seat_count"
+        :courses="fd_course_summary"
+        :busy="fd.busy"
+        :tip="fd.tip"
+        @floor="fd_open_floor"
+        @split="fd_split"
+        @tip="fd_tip"
+        :allergies="fd.allergies"
+        :eighty-six="fd.eighty_six.length"
+        @allergies="fd_edit_allergies"
+        @eighty-six="fd_open_86"
+        :guest="fd.guest"
+        @guest="fd_show_guest"
+        @covers="fd_ask_covers(true)"
+        @seat="(v) => (fd.seat = v)"
+        @fire="fd_fire"
+        @prebill="fd_prebill"
+      />
       <div class="my-0 py-0 overflow-y-auto" style="max-height: 60vh">
         <div @mouseover="style = 'cursor: pointer'">
 <v-data-table
@@ -536,6 +562,24 @@
     @click:row="(event, row) => openItemDialog(row.item, row)"
     return-object
 >
+    <template v-slot:item.item_name="{ item }">
+      <FdRowChips
+        v-if="fd_on"
+        :row="item"
+        :settings="fd_flags"
+        :courses="fd_courses"
+        :seat-count="fd_seat_count"
+        :sent="fd_sent_qty(item)"
+        :has-modifiers="fd_has_modifiers(item)"
+        :allergen="fd_row_alert(item)"
+        @seat="(v) => fd_set_seat(item, v)"
+        @course="(v) => fd_set_course(item, v)"
+        @hold="fd_toggle_hold(item)"
+        @modifiers="fd_edit_modifiers(item)"
+        @comp="fd_comp(item)"
+      />
+      <span v-else>{{ item.item_name }}</span>
+    </template>
     <template v-slot:item.qty="{ item }">
         {{ formtFloat(item.qty) }}
     </template>
@@ -576,6 +620,24 @@
             @click:row="(event, row) => onRowClick(row.item, row)"
             return-object
           >
+            <template v-slot:item.item_name="{ item }">
+              <FdRowChips
+                v-if="fd_on"
+                :row="item"
+                :settings="fd_flags"
+                :courses="fd_courses"
+                :seat-count="fd_seat_count"
+                :sent="fd_sent_qty(item)"
+                :has-modifiers="fd_has_modifiers(item)"
+        :allergen="fd_row_alert(item)"
+                @seat="(v) => fd_set_seat(item, v)"
+                @course="(v) => fd_set_course(item, v)"
+                @hold="fd_toggle_hold(item)"
+                @modifiers="fd_edit_modifiers(item)"
+                @comp="fd_comp(item)"
+              />
+              <span v-else>{{ item.item_name }}</span>
+            </template>
             <template v-slot:item.qty="{ item }">{{
               formtFloat(item.qty)
             }}</template>
@@ -1242,7 +1304,7 @@
                 block
                 class="pa-0"
                 color="accent"
-                @click="new_invoice"
+                @click="fd_run('new_invoice')"
                 ><v-icon start>mdi-content-save</v-icon>{{ __("Make KOT") }}</v-btn>
             </v-col>
             <v-col
@@ -1254,7 +1316,7 @@
                 block
                 class="pa-0"
                 color="primary"
-                @click="print_draft_invoice"
+                @click="fd_run('print_draft_invoice')"
                 ><v-icon start>mdi-printer</v-icon>{{ __("Print Draft") }}</v-btn>
             </v-col>
             <v-col class="pa-1">
@@ -1292,12 +1354,19 @@
 
 <script>
 import { evntBus } from "../../bus";
+import offlinePos from "../../../offline";
 import format from "../../format";
+import fineDining from "../../../shared/fine_dining/mixin.js";
+import FineDiningDialogs from "../../../shared/fine_dining/FineDiningDialogs.vue";
+import FineDiningBar from "../../../shared/fine_dining/FineDiningBar.vue";
+import FdRowChips from "../../../shared/fine_dining/FdRowChips.vue";
+import FloorPlanDialog from "../../../shared/fine_dining/FloorPlanDialog.vue";
+import SplitBillDialog from "../../../shared/fine_dining/SplitBillDialog.vue";
 import Customer from "./Customer.vue";
 import RFIDPopup from './RFIDPopup.vue';
 
 export default {
-  mixins: [format],
+  mixins: [format, fineDining],
   data() {
     return {
       pos_profile: "",
@@ -1317,6 +1386,7 @@ export default {
       posa_offers: [],
       posa_coupons: [],
       allItems: [],
+      wo_sale_id: null,
       discount_percentage_offer_name: null,
       invoiceTypes: ["Invoice", "Order"],
       invoiceType: "Invoice",
@@ -1392,6 +1462,11 @@ export default {
   components: {
     Customer,
     RFIDPopup,
+    FineDiningDialogs,
+    FineDiningBar,
+    FdRowChips,
+    FloorPlanDialog,
+    SplitBillDialog,
   },
 
   computed: {
@@ -1655,6 +1730,7 @@ saveItemChanges() {
         this.invoice_doc.posa_service_zone = table.service_zone;
         this.invoice_doc.posa_service_table = table.name;
         this.tableDialog = false;
+        this.fd_table_chosen();
     },
     tableColor(table) {
         switch (table.status) {
@@ -1918,6 +1994,8 @@ saveItemChanges() {
     },
 
     add_item(item) {
+      // fine dining: a dish marked 86 (unavailable today) cannot be added
+      if (!this.fd_allow_add(item)) return;
       // ?? Force Sales Person mandatory
       if (
         this.pos_profile.posa_sales_person &&
@@ -1940,7 +2018,8 @@ saveItemChanges() {
             el.uom === item.uom &&
             !el.posa_is_offer &&
             !el.posa_is_replace &&
-            el.batch_no === item.batch_no
+            el.batch_no === item.batch_no &&
+            this.fd_can_merge(el, item)
         );
       }
       if (index === -1 || this.new_line) {
@@ -1961,6 +2040,7 @@ saveItemChanges() {
         }
         this.items.unshift(new_item);
         this.update_item_detail(new_item);
+        this.fd_new_row(this.items[0]);
         // restore custom rate AFTER update
         if (item.posa_custom_rate) {
           new_item.rate = flt(item.rate || 0);
@@ -2139,9 +2219,26 @@ new_item.base_amount = new_item.amount;
 
       // Save the current invoice before resetting
       const doc = this.get_invoice_doc();
-      if (doc.name || doc.items.length) {
+      if ((doc.name || doc.items.length) && this.fd_is_offline()) {
+        // fine dining, waiter app offline: the order stays on this tablet and goes
+        // to the server (and so to the kitchen) as soon as the connection is back
+        if (doc.items.length && !doc.is_return) {
+          offlinePos
+            .holdCart(offlinePos.buildInvoice(doc))
+            .then(() => {
+              evntBus.$emit("show_mesage", {
+                text: __("No connection: the order is kept on this tablet and goes to the kitchen when the connection is back."),
+                color: "warning",
+              });
+            })
+            .catch((e) => {
+              evntBus.$emit("show_mesage", { text: __("Could not keep the order on this tablet: {0}", [e.message || e]), color: "error" });
+            });
+        }
+      } else if (doc.name || doc.items.length) {
         old_invoice = this.update_invoice(doc);
       }
+      if (this.waiter_offline()) this.wo_sale_id = data && data.posa_offline_id ? data.posa_offline_id : null;
 
       // Reset state only if not loading a specific invoice or return
       if (!data.name && !data.is_return) {
@@ -2284,6 +2381,13 @@ new_item.base_amount = new_item.amount;
       doc.posa_coupons = this.posa_coupons;
       doc.posa_service_zone = this.selcted_service_zone || "";
       doc.posa_service_table = this.selcted_service_table || "";
+      doc.posa_covers = this.fd.covers || 0;
+      if (this.waiter_offline()) {
+        if (!this.wo_sale_id) this.wo_sale_id = doc.posa_offline_id || offlinePos.newSaleId();
+        doc.posa_offline_id = doc.posa_offline_id || this.wo_sale_id;
+      }
+      doc.posa_tip_amount = this.fd.tip || 0;
+      doc.posa_allergies = this.fd.allergies || "";
       doc.posa_order_type = this.selcted_order_type || "";
       doc.posa_delivery_charges = this.selcted_delivery_charges.name;
       doc.posa_delivery_charges_rate = this.delivery_charges_rate || 0;
@@ -2379,6 +2483,7 @@ new_item.base_amount = new_item.amount;
           posa_delivery_date: item.posa_delivery_date,
           price_list_rate: item.price_list_rate,
           custom_rfid_card: item.custom_rfid_card,
+          ...this.fd_item_fields(item),
           // ?? preserve sales person
           posa_sales_person: item.posa_sales_person || null,
         };
@@ -2430,8 +2535,21 @@ new_item.base_amount = new_item.amount;
       return payments;
     },
 
+    // fine dining: Waiter App Works Offline (POS Profile) and the catalogue is on this tablet
+    waiter_offline() {
+      const p = this.pos_profile;
+      return !!(p && Number(p.posa_enable_fine_dining) && Number(p.posa_fd_waiter_offline) && offlinePos.enabled);
+    },
+    fd_is_offline() {
+      return this.waiter_offline() && offlinePos.useOffline();
+    },
     update_invoice(doc) {
       const vm = this;
+      if (this.fd_is_offline()) {
+        // totals computed on this tablet; the order is held here (see new_invoice)
+        vm.invoice_doc = offlinePos.buildInvoice(doc);
+        return vm.invoice_doc;
+      }
       frappe.call({
         method: "posawesome.posawesome.api.posapp.update_invoice",
         args: {
@@ -2847,7 +2965,8 @@ async show_payment() {
 
         if (
           this.pos_profile.posa_max_discount_allowed &&
-          !item.posa_offer_applied
+          !item.posa_offer_applied &&
+          !Number(item.posa_comp)
         ) {
           if (item.discount_amount && this.flt(item.discount_amount) > 0) {
             // calc discount percentage
@@ -3070,6 +3189,18 @@ async show_payment() {
       }
       const vm = this;
       if (!vm.pos_profile) return;
+      if (this.fd_is_offline()) {
+        offlinePos.itemsDetails(items).forEach((updated_item, idx) => {
+          const item = items[idx];
+          item.actual_qty = updated_item.actual_qty;
+          item.serial_no_data = updated_item.serial_no_data;
+          item.batch_no_data = updated_item.batch_no_data;
+          item.item_uoms = updated_item.item_uoms;
+          item.has_batch_no = updated_item.has_batch_no;
+          item.has_serial_no = updated_item.has_serial_no;
+        });
+        return;
+      }
       frappe.call({
         method: "posawesome.posawesome.api.posapp.get_items_details",
         async: false,
@@ -3097,38 +3228,7 @@ async show_payment() {
 
     update_item_detail(item) {
       const vm = this;
-      frappe.call({
-        method: "posawesome.posawesome.api.posapp.get_item_detail",
-        args: {
-          warehouse: this.pos_profile.warehouse,
-          doc: this.get_invoice_doc(),
-          price_list: this.pos_profile.price_list,
-          item: {
-            item_code: item.item_code,
-            customer: this.customer,
-            doctype: "Sales Invoice",
-            name: "New Sales Invoice 1",
-            company: this.pos_profile.company,
-            conversion_rate: 1,
-            qty: item.qty,
-            price_list_rate: item.price_list_rate,
-            child_docname: "New Sales Invoice Item 1",
-            cost_center: this.pos_profile.cost_center,
-            currency: this.pos_profile.currency,
-            // plc_conversion_rate: 1,
-            pos_profile: this.pos_profile.name,
-            uom: item.uom,
-            tax_category: "",
-            transaction_type: "selling",
-            update_stock: this.pos_profile.update_stock,
-            price_list: this.get_price_list(),
-            has_batch_no: item.has_batch_no,
-            serial_no: item.serial_no,
-            batch_no: item.batch_no,
-            is_stock_item: item.is_stock_item,
-          },
-        },
-        callback: function (r) {
+      const apply = function (r) {
           if (r.message) {
             const data = r.message;
             // item.stock_uom = data.stock_uom; // Ensure stock_uom is set
@@ -3208,7 +3308,53 @@ if (item.posa_custom_rate) {
   vm.$forceUpdate();
 }
           }
+      };
+      if (this.fd_is_offline()) {
+        const data = offlinePos.itemDetail({
+          item_code: item.item_code,
+          customer: this.customer,
+          qty: item.qty,
+          uom: item.uom,
+          price_list: this.get_price_list(),
+          price_list_rate: item.price_list_rate,
+          batch_no: item.batch_no,
+          posting_date: this.posting_date,
+        });
+        if (data) apply({ message: data });
+        return;
+      }
+      frappe.call({
+        method: "posawesome.posawesome.api.posapp.get_item_detail",
+        args: {
+          warehouse: this.pos_profile.warehouse,
+          doc: this.get_invoice_doc(),
+          price_list: this.pos_profile.price_list,
+          item: {
+            item_code: item.item_code,
+            customer: this.customer,
+            doctype: "Sales Invoice",
+            name: "New Sales Invoice 1",
+            company: this.pos_profile.company,
+            conversion_rate: 1,
+            qty: item.qty,
+            price_list_rate: item.price_list_rate,
+            child_docname: "New Sales Invoice Item 1",
+            cost_center: this.pos_profile.cost_center,
+            currency: this.pos_profile.currency,
+            // plc_conversion_rate: 1,
+            pos_profile: this.pos_profile.name,
+            uom: item.uom,
+            tax_category: "",
+            transaction_type: "selling",
+            update_stock: this.pos_profile.update_stock,
+            price_list: this.get_price_list(),
+            has_batch_no: item.has_batch_no,
+            serial_no: item.serial_no,
+            batch_no: item.batch_no,
+            is_stock_item: item.is_stock_item,
+          },
         },
+        callback: apply,
       });
     },
 
@@ -3447,7 +3593,7 @@ if (item.posa_custom_rate) {
     shortHoldInvoice(e) {
       if (e.key === 'F9' || (e.key === "b" || e.key === "B") && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        this.new_invoice();
+        this.fd_run('new_invoice');
       }
     },
 
@@ -3465,6 +3611,18 @@ if (item.posa_custom_rate) {
       }
     },
 
+    // The row the "first item" shortcuts act on (+ / Ctrl+Q / F6 open it,
+    // Ctrl++ / Ctrl+- change its qty, Ctrl+D deletes it): the first item the
+    // cashier added, not a free / replaced offer row (the "Offer" column),
+    // which the offers put at the top. Only offer rows: the first row.
+    is_offer_row(item) {
+      return !!item && (!!Number(item.posa_is_offer) || !!item.posa_is_replace);
+    },
+    first_cart_item() {
+      const items = (this.items || []).filter(Boolean);
+      return items.find((it) => !this.is_offer_row(it)) || items[0] || null;
+    },
+
     shortEditQty(e) {
       if (e.key === 'F2') {
         e.preventDefault();
@@ -3475,14 +3633,16 @@ if (item.posa_custom_rate) {
     shortPlussQty(e) {
       if (e.key === '-' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        this.subtract_one(this.items[0]);
+        const item = this.first_cart_item();
+        if (item) this.subtract_one(item);
       }
     },
 
     shortMinusQty(e) {
       if (e.key === '+' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        this.add_one(this.items[0]);
+        const item = this.first_cart_item();
+        if (item) this.add_one(item);
       }
     },
 
@@ -3499,8 +3659,8 @@ if (item.posa_custom_rate) {
     shortDeleteFirstItem(e) {
       if ((e.key === "d" || e.key === "D") && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        this.handleRemoveItem(this.items[0]);
-        //this.remove_item(this.items[0]);
+        const item = this.first_cart_item();
+        if (item) this.handleRemoveItem(item);
         evntBus.$emit('escEventTriggered');
       }
     },
@@ -3516,7 +3676,7 @@ if (item.posa_custom_rate) {
 
         // Restaurant Item Popup
         if (this.pos_profile.posa_item_popup_instead_expand) {
-          this.openItemDialog(this.items[0]);
+          this.openItemDialog(this.first_cart_item());
           return;
         }
 
@@ -3531,7 +3691,7 @@ if (item.posa_custom_rate) {
           if (this.$root) {
             evntBus.$emit('inputBlurTriggered');
           }
-          this.expanded.push(this.items[0]);
+          this.expanded.push(this.first_cart_item());
         }
       }
     },
@@ -3646,6 +3806,27 @@ if (item.posa_custom_rate) {
       return item;
     },
 
+    // Free quantity of a Give Product offer. With "Repeat For Every Min
+    // Quantity" it grows with the qualifying qty: min 10, given 1 gives
+    // 1 for 10-19, 2 for 20-29, 3 for 30-39 ... (capped by Max Free Qty).
+    offerGivenQty(offer) {
+      const given = Number(offer.given_qty) || 0;
+      if (
+        !Number(offer.is_recursive) ||
+        Number(offer.replace_item) ||
+        Number(offer.replace_cheapest_item)
+      ) {
+        return given;
+      }
+      const step = Number(offer.min_qty) || 0;
+      if (step <= 0) return given;
+      const times = Math.floor((Number(offer.qualify_qty) || 0) / step + 1e-9);
+      let qty = Math.max(times, 1) * given;
+      const cap = Number(offer.max_given_qty) || 0;
+      if (cap > 0) qty = Math.min(qty, cap);
+      return qty;
+    },
+
     checkQtyAnountOffer(offer, qty, amount) {
       let min_qty = false;
       let max_qty = false;
@@ -3683,6 +3864,8 @@ if (item.posa_custom_rate) {
       let apply = false;
       if (!applys.includes(false)) {
         apply = true;
+        // the qty that qualified, for a repeating free product offer
+        offer.qualify_qty = qty;
       }
       const res = {
         apply: apply,
@@ -3948,6 +4131,21 @@ if (item.posa_custom_rate) {
                 }
               }
             });
+          } else if (
+            existOffer.offer === "Give Product" &&
+            existOffer.give_item_row_id &&
+            Number(offer.is_recursive) &&
+            !Number(offer.replace_item) &&
+            !Number(offer.replace_cheapest_item)
+          ) {
+            // repeating free product: follow the qualifying qty
+            const freeRow = this.getItemFromRowID(existOffer.give_item_row_id);
+            const want = this.offerGivenQty(offer);
+            if (freeRow && want > 0 && Number(freeRow.qty) !== want) {
+              freeRow.qty = want;
+              this.calc_stock_qty(freeRow, want);
+              this.$forceUpdate();
+            }
           } else if (existOffer.offer === "Item Price") {
             this.ApplyOnPrice(offer);
           } else if (existOffer.offer === "Grand Total") {
@@ -4053,8 +4251,9 @@ if (item.posa_custom_rate) {
           offer.give_item_row_id = item.posa_row_id;
         } else {
           const item = this.ApplyOnGiveProduct(offer);
-          this.items.unshift(item);
+          // free item not in this profile's catalogue: no empty cart row
           if (item) {
+            this.items.unshift(item);
             offer.give_item_row_id = item.posa_row_id;
           }
         }
@@ -4095,8 +4294,9 @@ if (item.posa_custom_rate) {
         return;
       }
       const new_item = { ...item };
-      new_item.qty = offer.given_qty;
-      new_item.stock_qty = offer.given_qty;
+      const givenQty = this.offerGivenQty(offer);
+      new_item.qty = givenQty;
+      new_item.stock_qty = givenQty;
       new_item.rate = offer.discount_type === "Rate" ? offer.rate : item.rate;
       new_item.discount_amount =
         offer.discount_type === "Discount Amount" ? offer.discount_amount : 0;

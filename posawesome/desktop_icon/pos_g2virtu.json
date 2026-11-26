@@ -1,0 +1,20 @@
+{
+ "app": "posawesome",
+ "creation": "2026-11-26 16:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_type": "App",
+ "idx": 2,
+ "label": "POS G2Virtu",
+ "link": "/desk/pos-g2virtu",
+ "link_type": "External",
+ "logo_url": "/assets/posawesome/images/pos-g2virtu-logo.svg",
+ "modified": "2026-11-26 16:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "POS G2Virtu",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}

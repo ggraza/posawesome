@@ -801,7 +801,8 @@ def prepare_invoice_doc(data):
     )
     for item in invoice_doc.items:
         if not item.rate or item.rate == 0:
-            if allow_zero_rated_items:
+            # fine dining comp: free by an approved reason (POS Void Log, checked in validate)
+            if allow_zero_rated_items or cint(item.get("posa_comp")):
                 item.price_list_rate = 0.00
                 item.is_free_item = 1
             else:

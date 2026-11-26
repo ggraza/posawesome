@@ -1,12 +1,16 @@
 import frappe
 import json
 from frappe import _
-from frappe.utils import nowdate, flt, cstr, getdate, add_days
+from frappe.utils import nowdate, flt, cint, cstr, getdate, add_days
 import requests
 from frappe import publish_realtime
 
 @frappe.whitelist()
 def create_kitchen_tickets(doc, method):
+
+    # items moved from another order (fine dining): the kitchen already has them
+    if getattr(doc, "flags", None) and doc.flags.get("posa_skip_kot"):
+        return
 
     if not frappe.db.exists("Sales Invoice", doc.name):
         frappe.enqueue(
@@ -136,24 +140,15 @@ def create_kitchen_tickets(doc, method):
     # calculate how much quantity has already been sent.
     # ------------------------------------------------------------------
 
-    kot_qty_map = {}
+    # what the kitchen has per row: order tickets minus VOID tickets
+    from posawesome.posawesome.api.fine_dining import sent_map, settings as fd_settings
 
-    existing_kots = frappe.get_all(
-        "Kitchen Ticket",
-        filters={"sales_invoice": doc.name},
-        fields=["name"]
-    )
+    kot_qty_map = {key: e.qty for key, e in sent_map(doc.name).items()}
 
-    for kot in existing_kots:
-        items = frappe.get_all(
-            "Kitchen Ticket Items",
-            filters={"parent": kot.name},
-            fields=["posa_row_id", "item_code", "qty"]
-        )
-
-        for d in items:
-            key = d.posa_row_id or d.item_code
-            kot_qty_map[key] = kot_qty_map.get(key, 0) + flt(d.qty)
+    # fine dining: rows of a held course wait until the waiter fires them
+    fd = fd_settings(doc.pos_profile)
+    hold_courses = bool(fd.courses)
+    held = False
 
     # ------------------------------------------------------------------
     # Group Sales Invoice Items
@@ -167,8 +162,14 @@ def create_kitchen_tickets(doc, method):
 
         already_created = flt(kot_qty_map.get(key, 0))
         remaining_qty = flt(item.qty) - already_created
+        if item.meta.has_field("posa_kot_qty"):
+            item.posa_kot_qty = already_created
 
         if remaining_qty <= 0:
+            continue
+
+        if hold_courses and item.get("posa_course_status") == "Hold":
+            held = True
             continue
 
         item_group = frappe.db.get_value(
@@ -190,13 +191,17 @@ def create_kitchen_tickets(doc, method):
             continue
 
         item.remaining_qty = remaining_qty
+        if item.meta.has_field("posa_kot_qty"):
+            item.posa_kot_qty = already_created + remaining_qty
         unit_items.setdefault(unit_name, []).append(item)
 
     # ------------------------------------------------------------------
     # No KOT generated
     # ------------------------------------------------------------------
 
-    if queue_name and not unit_items:
+    # an order with nothing for the kitchen is ready at once; an order whose
+    # items are already with the kitchen (or held for a later course) is not
+    if queue_name and not unit_items and not kot_qty_map and not held:
 
         queue = frappe.get_doc("Queue Ticket", queue_name)
 
@@ -233,6 +238,16 @@ def create_kitchen_tickets(doc, method):
         kt.pos_profile = kitchen_unit.pos_profile
         kt.kitchen_production_unit = kitchen_unit.name
         kt.time_created = frappe.utils.nowtime()
+        if kt.meta.has_field("ticket_type"):
+            kt.ticket_type = "Order"
+            kt.service_table = doc.get("posa_service_table")
+            kt.covers = cint(doc.get("posa_covers"))
+            kt.courses = ", ".join(sorted({i.get("posa_course") for i in items if i.get("posa_course")}))
+
+        # fine dining: the ticket lists courses in their order (Starters, Mains, ...)
+        if any(i.get("posa_course") for i in items):
+            seq = dict(frappe.get_all("POS Course", fields=["name", "sequence"], as_list=True))
+            items = sorted(items, key=lambda i: cint(seq.get(i.get("posa_course"), 9999)) if i.get("posa_course") else 9999)
 
         for i in items:
 
@@ -247,8 +262,16 @@ def create_kitchen_tickets(doc, method):
                 "amount": qty * flt(i.rate),
                 "uom": i.uom,
                 "posa_notes": i.posa_notes,
-                "posa_row_id": i.posa_row_id
+                "posa_row_id": i.posa_row_id,
+                "posa_seat": cint(i.get("posa_seat")),
+                "posa_course": i.get("posa_course"),
+                "posa_modifiers": i.get("posa_modifiers"),
             })
+
+        # fine dining: kitchen target minutes and allergy flags
+        from posawesome.posawesome.api.fine_dining_kitchen import enrich_ticket
+
+        enrich_ticket(doc, kt, items)
 
         kt.insert(ignore_permissions=True)
         kt.submit()

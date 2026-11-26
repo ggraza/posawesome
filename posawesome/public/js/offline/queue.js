@@ -141,6 +141,32 @@ async function update(offlineId, patch) {
 	return row;
 }
 
+const FBR_METHOD = "posawesome.events.sales_invoice.submit_to_fbr";
+
+// FBR: a sale goes to FBR only when its receipt is printed. Printed after it
+// was queued (Print Last Invoice):
+//   pending / failed -> flag it; the server sends it on upload
+//   uploaded         -> remember it; sent once the server has made the invoice
+//   synced           -> send it now (the server skips an invoice that already
+//                       has its FBR number)
+export async function markQueuedPrinted(offlineId) {
+	const row = await db().get("invoices", offlineId);
+	if (!row) return;
+	if (row.status === "synced" && row.server_name) {
+		if (network.isOnline) await serverCall(FBR_METHOD, { doctype: "Sales Invoice", name: row.server_name }).catch(() => {});
+		return;
+	}
+	if (row.status === "uploaded") row.fbr_after_sync = 1;
+	else row.data = Object.assign({}, row.data, { posa_print: 1 });
+	await db().put("invoices", row);
+}
+
+function fbrAfterSync(row, patch) {
+	if (row.fbr_after_sync && patch.status === "synced" && patch.server_name && network.isOnline) {
+		serverCall(FBR_METHOD, { doctype: "Sales Invoice", name: patch.server_name }).catch(() => {});
+	}
+}
+
 function applyResult(row, result) {
 	const status = result.status;
 	if (status === "Synced" || status === "Duplicate") {
@@ -225,6 +251,7 @@ export function syncQueue({ batchSize = 20 } = {}) {
 						const patch = applyResult(r, x);
 						if (patch.status !== "uploaded") {
 							await update(r.offline_id, patch);
+							fbrAfterSync(await getInvoice(r.offline_id), patch);
 							changed.push({ ...r, ...patch });
 						}
 					}

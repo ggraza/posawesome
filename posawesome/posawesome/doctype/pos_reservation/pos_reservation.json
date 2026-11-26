@@ -1,0 +1,284 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 16:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "guest_name",
+  "customer",
+  "phone",
+  "party_size",
+  "column_break_r1",
+  "is_waitlist",
+  "reservation_start",
+  "duration_minutes",
+  "reservation_end",
+  "quoted_wait_minutes",
+  "status",
+  "section_table",
+  "company",
+  "pos_profile",
+  "column_break_r2",
+  "service_zone",
+  "service_table",
+  "section_guest",
+  "occasion",
+  "allergies",
+  "column_break_r3",
+  "notes",
+  "deposit_amount",
+  "deposit_reference",
+  "section_visit",
+  "arrived_at",
+  "seated_at",
+  "column_break_r4",
+  "sales_invoice",
+  "help_tab",
+  "pos_reservation_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "guest_name",
+   "fieldtype": "Data",
+   "label": "Guest Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "bold": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone",
+   "options": "Phone",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "party_size",
+   "fieldtype": "Int",
+   "label": "Guests",
+   "reqd": 1,
+   "non_negative": 1,
+   "default": "2",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_r1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "is_waitlist",
+   "fieldtype": "Check",
+   "label": "Waitlist (Walk-in)",
+   "default": "0",
+   "in_standard_filter": 1,
+   "description": "A walk-in waiting for a table, not a booking for a time"
+  },
+  {
+   "fieldname": "reservation_start",
+   "fieldtype": "Datetime",
+   "label": "Date and Time",
+   "in_list_view": 1,
+   "mandatory_depends_on": "eval:!doc.is_waitlist"
+  },
+  {
+   "fieldname": "duration_minutes",
+   "fieldtype": "Int",
+   "label": "Duration (minutes)",
+   "default": "90",
+   "non_negative": 1,
+   "depends_on": "eval:!doc.is_waitlist"
+  },
+  {
+   "fieldname": "reservation_end",
+   "fieldtype": "Datetime",
+   "label": "Ends",
+   "read_only": 1,
+   "depends_on": "eval:!doc.is_waitlist"
+  },
+  {
+   "fieldname": "quoted_wait_minutes",
+   "fieldtype": "Int",
+   "label": "Quoted Wait (minutes)",
+   "non_negative": 1,
+   "depends_on": "eval:doc.is_waitlist"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Booked\nConfirmed\nArrived\nSeated\nCompleted\nCancelled\nNo Show",
+   "default": "Booked",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "section_table",
+   "fieldtype": "Section Break",
+   "label": "Table"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile"
+  },
+  {
+   "fieldname": "column_break_r2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "service_zone",
+   "fieldtype": "Link",
+   "label": "Service Zone",
+   "options": "Service Zone"
+  },
+  {
+   "fieldname": "service_table",
+   "fieldtype": "Link",
+   "label": "Table",
+   "options": "Service Table",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "section_guest",
+   "fieldtype": "Section Break",
+   "label": "Guest"
+  },
+  {
+   "fieldname": "occasion",
+   "fieldtype": "Select",
+   "label": "Occasion",
+   "options": "\nBirthday\nAnniversary\nBusiness\nDate\nCelebration\nOther"
+  },
+  {
+   "fieldname": "allergies",
+   "fieldtype": "Small Text",
+   "label": "Allergies",
+   "description": "Comma separated; copied to the order when seated"
+  },
+  {
+   "fieldname": "column_break_r3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "deposit_amount",
+   "fieldtype": "Currency",
+   "label": "Deposit",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "deposit_reference",
+   "fieldtype": "Data",
+   "label": "Deposit Reference",
+   "description": "Receipt / Payment Entry number"
+  },
+  {
+   "fieldname": "section_visit",
+   "fieldtype": "Section Break",
+   "label": "Visit",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "arrived_at",
+   "fieldtype": "Datetime",
+   "label": "Arrived At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "seated_at",
+   "fieldtype": "Datetime",
+   "label": "Seated At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_r4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Order",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "pos_reservation_help",
+   "fieldtype": "HTML",
+   "label": "POS Reservation Help"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-26 04:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Reservation",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "reservation_start",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "format:RES-{YY}{MM}-{#####}",
+ "naming_rule": "Expression",
+ "title_field": "guest_name"
+}

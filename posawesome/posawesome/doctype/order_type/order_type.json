@@ -15,7 +15,9 @@
   "is_delivery",
   "is_take_away",
   "image",
-  "disable"
+  "disable",
+  "help_tab",
+  "order_type_help"
  ],
  "fields": [
   {
@@ -70,6 +72,16 @@
    "in_list_view": 1,
    "in_preview": 1,
    "label": "Is Take Away"
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "order_type_help",
+   "fieldtype": "HTML",
+   "label": "Order Type Help"
   }
  ],
  "hide_toolbar": 1,
@@ -77,7 +89,7 @@
  "image_field": "image",
  "links": [],
  "max_attachments": 3,
- "modified": "2026-07-12 03:59:07.600648",
+ "modified": "2026-11-26 04:00:00.000000",
  "modified_by": "Administrator",
  "module": "POSAwesome",
  "name": "Order Type",

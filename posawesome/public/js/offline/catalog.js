@@ -14,6 +14,13 @@ function lower(s) {
 	return (s || "").toString().toLowerCase();
 }
 
+/** lower case, punctuation as spaces, single spaces */
+function words(value) {
+	return lower(value)
+		.replace(/[^\p{L}\p{N}.]+/gu, " ")
+		.trim();
+}
+
 export class Catalog {
 	constructor() {
 		this.profileName = null;
@@ -111,7 +118,8 @@ export class Catalog {
 	// ------------------------------------------------------------------ indexing
 	_prepare(it) {
 		const codes = (it.item_barcode || []).map((b) => lower(b.barcode));
-		it._hay = `${lower(it.item_code)} ${lower(it.item_name)} ${codes.join(" ")}`;
+		// punctuation as spaces: "ANTI- HAIR" and "GINSEENG&KERATIN" become words
+		it._hay = words(`${it.item_code} ${it.item_name} ${codes.join(" ")}`);
 		it._name = lower(it.item_name);
 		it._code = lower(it.item_code);
 		it._group = lower(it.item_group);
@@ -227,6 +235,22 @@ export class Catalog {
 		this.version++;
 	}
 
+	/** Drop items whose code is not in `keep` (after a full re-download for a new scope). */
+	async pruneItems(keep) {
+		const gone = [];
+		for (const code of this.byCode.keys()) if (!keep.has(code)) gone.push({ item_code: code, deleted: 1 });
+		if (gone.length) await this.applyItems(gone);
+		return gone.length;
+	}
+
+	/** Same for customers; customers created offline and not yet synced are kept. */
+	async pruneCustomers(keep) {
+		const gone = [];
+		for (const [name, c] of this.customerByName) if (!keep.has(name) && !c.__offline) gone.push({ name, deleted: 1 });
+		if (gone.length) await this.applyCustomers(gone);
+		return gone.length;
+	}
+
 	async applyDeleted(rows) {
 		const byType = {};
 		for (const r of rows) (byType[r.doctype] = byType[r.doctype] || []).push(r.name);
@@ -326,21 +350,29 @@ export class Catalog {
 		const exact = [];
 		const direct = this.lookupCode(q) || this.lookupCode(text);
 		if (direct && accept(direct.item)) exact.push(direct.item);
-		const words = q.split(/\s+/).filter(Boolean);
+		// every word must appear in the code, name or a barcode, in any order and
+		// as part of a word: "sh palm hair" finds "180ML PALMOLIVE ... HAIR ... SHAMPU".
+		// Ranking: code/name starts with the text, then all words start a word,
+		// then words anywhere.
+		const terms = words(q).split(" ").filter(Boolean);
+		if (!terms.length) return exact.slice(0, limit);
+		const phrase = terms.join(" ");
 		const prefix = [];
+		const wordStart = [];
 		const contains = [];
 		const maxScan = limit * 4;
 		for (const it of this.items) {
 			if (exact[0] === it || !accept(it)) continue;
-			if (it._code.startsWith(q) || it._name.startsWith(q)) {
-				prefix.push(it);
-			} else if (words.length > 1 ? words.every((w) => it._hay.includes(w)) : it._hay.includes(q)) {
-				contains.push(it);
-			}
-			if (prefix.length >= limit) break;
-			if (prefix.length + contains.length >= maxScan) break;
+			const hay = it._hay;
+			if (!terms.every((w) => hay.includes(w))) continue;
+			if (it._code.startsWith(q) || it._name.startsWith(q) || hay.startsWith(phrase)) prefix.push(it);
+			else if (terms.every((w) => hay.startsWith(w) || hay.includes(" " + w))) wordStart.push(it);
+			else if (contains.length < maxScan) contains.push(it);
+			// better matches can come later in the list: only stop once the
+			// two best tiers alone fill the page
+			if (prefix.length + wordStart.length >= limit) break;
 		}
-		return exact.concat(prefix, contains).slice(0, limit);
+		return exact.concat(prefix, wordStart, contains).slice(0, limit);
 	}
 
 	searchCustomers(text, limit = 30) {

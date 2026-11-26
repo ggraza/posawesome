@@ -18,7 +18,9 @@
   "image",
   "lft",
   "rgt",
-  "old_parent"
+  "old_parent",
+  "help_tab",
+  "service_zone_help"
  ],
  "fields": [
   {
@@ -91,6 +93,16 @@
    "fieldtype": "Link",
    "label": "Old Parent",
    "options": "Service Zone"
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "service_zone_help",
+   "fieldtype": "HTML",
+   "label": "Service Zone Help"
   }
  ],
  "icon": "fa fa-sitemap",
@@ -114,7 +126,7 @@
   }
  ],
  "max_attachments": 3,
- "modified": "2026-07-26 14:46:32.999356",
+ "modified": "2026-11-26 04:00:00.000000",
  "modified_by": "Administrator",
  "module": "POSAwesome",
  "name": "Service Zone",

@@ -13,6 +13,12 @@
   "amount",
   "uom",
   "posa_notes",
+  "posa_seat",
+  "posa_course",
+  "posa_modifiers",
+  "item_status",
+  "ready_at",
+  "posa_allergen_alert",
   "posa_row_id",
   "item_group"
  ],
@@ -75,12 +81,55 @@
    "fieldtype": "Link",
    "label": "Item Group",
    "options": "Item Group"
+  },
+  {
+   "fieldname": "posa_seat",
+   "fieldtype": "Int",
+   "label": "Seat",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "posa_course",
+   "fieldtype": "Data",
+   "label": "Course",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "posa_modifiers",
+   "fieldtype": "Small Text",
+   "label": "Modifiers",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "item_status",
+   "fieldtype": "Select",
+   "label": "Item Status",
+   "options": "\nReady\nServed",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "ready_at",
+   "fieldtype": "Datetime",
+   "label": "Ready At",
+   "read_only": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "posa_allergen_alert",
+   "fieldtype": "Data",
+   "label": "Allergy Alert",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-15 16:50:52.940178",
+ "modified": "2026-11-26 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "POSAwesome",
  "name": "Kitchen Ticket Items",

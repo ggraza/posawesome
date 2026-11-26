@@ -79,8 +79,15 @@ doc_events = {
     },
 
     "Sales Invoice": {
+        "on_trash": "posawesome.posawesome.api.fine_dining.on_trash_invoice",
+        # fine dining: service charge and tip rows, the waiter
+        "before_validate": "posawesome.posawesome.api.fine_dining_floor.apply_charges",
         "validate": [
             "posawesome.posawesome.api.invoice.validate",
+            # fine dining: void / comp of items already sent to the kitchen
+            "posawesome.posawesome.api.fine_dining.validate_invoice",
+            # fine dining: dishes marked unavailable (86)
+            "posawesome.posawesome.api.fine_dining_kitchen.validate_86",
         ],
         "before_save": [
             "posawesome.overrides.sales_invoice.calculate_salesperson_commission",
@@ -95,6 +102,8 @@ doc_events = {
             # FBR: no longer sent on submit, only when the invoice is printed
             # (events/sales_invoice.submit_to_fbr is called by the POS print).
             "posawesome.posawesome.doctype.service_table.service_table.on_submit_service_table",
+            # fine dining: the booking of a paid order is completed
+            "posawesome.posawesome.api.fine_dining_guests.complete_booking",
             "posawesome.posawesome.api.stock_entry.create_manufacture_stock_entry",
         ],
         "before_cancel": [
@@ -231,6 +240,8 @@ scheduler_events = {
 after_migrate = [
     "posawesome.posawesome.api.offline.after_migrate",
     "posawesome.posawesome.price_checker.after_migrate",
+    # fine dining: default courses and void reasons, Guest Check print format
+    "posawesome.posawesome.api.fine_dining.after_migrate",
     # POS Offer: fill the item / group / brand lists of offers made before them
     "posawesome.posawesome.doctype.pos_offer.pos_offer.copy_single_targets",
 ]
@@ -468,6 +479,76 @@ fixtures = [
                     "POS Profile-posa_scale_validate_check_digit",
                     "POS Profile-posa_vfd_section",
                     "POS Profile-posa_help_tab",
+                    "POS Profile-posa_fd5_section",
+                    "POS Profile-posa_fd_waiter_offline",
+                    "Customer-posa_guest_section",
+                    "Customer-posa_vip",
+                    "Customer-posa_anniversary",
+                    "Customer-posa_guest_col",
+                    "Customer-posa_guest_preferences",
+                    "Customer-posa_guest_allergies",
+                    "Customer-posa_guest_notes",
+                    "POS Profile-posa_fd4_section",
+                    "POS Profile-posa_fd_reservations",
+                    "POS Profile-posa_fd_reservation_hold_minutes",
+                    "POS Profile-posa_fd_col6",
+                    "POS Profile-posa_fd_guest_profiles",
+                    "POS Profile-posa_fd_feedback",
+                    "Sales Invoice-posa_allergies",
+                    "Item-posa_fine_dining_section",
+                    "Item-posa_prep_minutes",
+                    "Item-posa_allergens",
+                    "Item-posa_fd_col",
+                    "Item-posa_86",
+                    "Item-posa_86_on",
+                    "POS Profile-posa_fd3_section",
+                    "POS Profile-posa_fd_expo",
+                    "POS Profile-posa_fd_kds_item_bump",
+                    "POS Profile-posa_fd_prep_minutes",
+                    "POS Profile-posa_fd_col5",
+                    "POS Profile-posa_fd_86",
+                    "POS Profile-posa_fd_allergens",
+                    "Sales Invoice-posa_waiter",
+                    "Sales Invoice-posa_tip_amount",
+                    "Sales Invoice-posa_split_count",
+                    "Sales Invoice-posa_split_from",
+                    "Sales Taxes and Charges-posa_fd_charge",
+                    "POS Profile-posa_fd2_section",
+                    "POS Profile-posa_fd_floor_plan",
+                    "POS Profile-posa_fd_table_cleaning",
+                    "POS Profile-posa_fd_split_bill",
+                    "POS Profile-posa_fd_col3",
+                    "POS Profile-posa_fd_service_charge",
+                    "POS Profile-posa_fd_service_charge_rate",
+                    "POS Profile-posa_fd_service_charge_account",
+                    "POS Profile-posa_fd_service_charge_min_covers",
+                    "POS Profile-posa_fd_col4",
+                    "POS Profile-posa_fd_tips",
+                    "POS Profile-posa_fd_tips_account",
+                    "Sales Invoice-posa_covers",
+                    "Sales Invoice-posa_prebill_count",
+                    "Sales Invoice Item-posa_seat",
+                    "Sales Invoice Item-posa_course",
+                    "Sales Invoice Item-posa_course_status",
+                    "Sales Invoice Item-posa_modifiers",
+                    "Sales Invoice Item-posa_parent_row_id",
+                    "Sales Invoice Item-posa_kot_qty",
+                    "Sales Invoice Item-posa_comp",
+                    "Sales Invoice Item-posa_comp_reason",
+                    "POS Profile-posa_fd_section",
+                    "POS Profile-posa_enable_fine_dining",
+                    "POS Profile-posa_fd_covers",
+                    "POS Profile-posa_fd_covers_required",
+                    "POS Profile-posa_fd_seats",
+                    "POS Profile-posa_fd_col1",
+                    "POS Profile-posa_fd_modifiers",
+                    "POS Profile-posa_fd_courses",
+                    "POS Profile-posa_fd_col2",
+                    "POS Profile-posa_fd_void_control",
+                    "POS Profile-posa_fd_void_approval",
+                    "POS Profile-posa_fd_approver_role",
+                    "POS Profile-posa_fd_prebill",
+                    "POS Profile-posa_fd_prebill_format",
                     "POS Profile-posa_rates_section",
                     "POS Profile-posa_rates_col",
                     "POS Profile-posa_payments_section",
@@ -615,3 +696,11 @@ fixtures = [
         "filters": [["name", "in", ("Sales Invoice-posa_pos_opening_shift-no_copy", "POS Profile-main-field_order")]],
     },
 ]
+
+# Jinja methods for print formats (fine dining guest feedback link / QR code)
+jinja = {
+    "methods": [
+        "posawesome.posawesome.api.fine_dining_guests.feedback_url",
+        "posawesome.posawesome.api.fine_dining_guests.feedback_qr",
+    ]
+}
