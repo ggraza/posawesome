@@ -389,6 +389,7 @@
 
 <script>
 import { evntBus } from '../../bus';
+import offlinePos from '../../../offline';
 import format from '../../format';
 import _ from '../../../shared/debounce';
 export default {
@@ -770,12 +771,32 @@ export default {
     show_table() {
       evntBus.$emit('show_table', 'true');
     },
+    // fine dining: Waiter App Works Offline
+    waiter_offline() {
+      const p = this.pos_profile;
+      return !!(p && Number(p.posa_enable_fine_dining) && Number(p.posa_fd_waiter_offline) && offlinePos.enabled);
+    },
     get_items() {
       if (!this.pos_profile) {
         console.error('No POS Profile');
         return;
       }
       const vm = this;
+      if (this.waiter_offline() && !vm.pos_profile.pose_use_limit_search && offlinePos.useLocalCatalog()) {
+        // the items come from the catalogue kept on this tablet
+        vm.items = offlinePos.posItems({ priceList: vm.customer_price_list });
+        evntBus.$emit('set_all_items', vm.items);
+        vm.loading = false;
+        return;
+      }
+      if (this.waiter_offline() && offlinePos.useOffline()) {
+        vm.loading = false;
+        evntBus.$emit('show_mesage', {
+          text: __('Offline: the item catalogue has not been downloaded to this tablet yet'),
+          color: 'error',
+        });
+        return;
+      }
       this.loading = true;
       let search = this.get_search(this.first_search);
       let gr = '';

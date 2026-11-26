@@ -18,7 +18,9 @@
   "to_warehouse",
   "section_break_vzjt8",
   "item_groups",
-  "items"
+  "items",
+  "help_tab",
+  "kitchen_production_unit_help"
  ],
  "fields": [
   {
@@ -94,11 +96,21 @@
    "fieldname": "allow_quick_production",
    "fieldtype": "Check",
    "label": "Allow Quick Production"
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "kitchen_production_unit_help",
+   "fieldtype": "HTML",
+   "label": "Kitchen Production Unit Help"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-27 14:36:26.321300",
+ "modified": "2026-11-26 04:00:00.000000",
  "modified_by": "Administrator",
  "module": "POSAwesome",
  "name": "Kitchen Production Unit",

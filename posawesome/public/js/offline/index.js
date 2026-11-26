@@ -10,7 +10,7 @@
 // unchanged.
 import { markRaw, reactive } from "vue";
 import { catalog } from "./catalog";
-import { network, startConnectivityMonitor, onConnectivityChange, setForcedOffline, ping } from "./network";
+import { network, startConnectivityMonitor, onConnectivityChange, setForcedOffline, ping, serverCall, NetworkError } from "./network";
 import { syncCatalog, startPeriodicSync, syncState, catalogAgeDays } from "./sync";
 import {
 	enqueueInvoice,
@@ -26,10 +26,24 @@ import {
 	exportQueue,
 	shiftHasPending,
 	getInvoice,
+	newOfflineId,
+	markQueuedPrinted,
 } from "./queue";
 import { calculateTaxesAndTotals, calculatePayments, itemTaxTemplateFor } from "./taxes";
 import { requestPersistentStorage } from "./idb";
-import { printOfflineReceipt } from "./receipt";
+import { printOfflineReceipt, receiptHtml } from "./receipt";
+
+// A receipt printed after the sale was queued (Print Last Invoice) sends the
+// sale to FBR too (see queue.markQueuedPrinted). Only when FBR is on.
+async function markPrinted(record) {
+	if (!record || !record.offline_id) return;
+	const p = offlineState.profile || bootstrap().pos_profile || {};
+	if (!Number(p.allow_fbr_on_submit)) return;
+	if (record.status === "pending" && record.data && Number(record.data.posa_print)) return; // already flagged
+	await markQueuedPrinted(record.offline_id);
+}
+import * as qzPrint from "./qz_print";
+import * as drafts from "./drafts";
 
 const LAST_OPENING_KEY = () => `posa_last_opening__${(frappe.boot && frappe.boot.sitename) || location.host}__${frappe.session.user}`;
 
@@ -42,9 +56,76 @@ export const offlineState = reactive({
 	sync: syncState,
 	queue: queueState,
 	catalogVersion: 0,
+	// bumps when offers / coupons / referral codes / RFID cards / settings change
+	bootstrapVersion: 0,
+	lastRemoteChange: null,
 });
 
 let posItemsCache = { key: null, list: null, byCode: null };
+
+// ---- catalogue sync orchestration (initial, periodic, reconnect, realtime, manual)
+let syncOptions = {};
+let realtimeBound = false;
+let remoteTimer = null;
+let remotePending = false;
+let lastRemoteSync = 0;
+const REMOTE_DEBOUNCE_MS = 2000; // coalesce a burst of saves
+const REMOTE_MIN_INTERVAL_MS = 10000; // and never sync more often than this on events
+
+function bootstrapSignature() {
+	const b = catalog.getMeta("bootstrap") || {};
+	try {
+		return JSON.stringify([b.offers, b.coupons, b.referral_codes, b.rfid_cards, b.delivery_charges, b.item_groups, b.pos_profile && b.pos_profile.modified]);
+	} catch (e) {
+		return String(Math.random());
+	}
+}
+
+function afterSync() {
+	posItemsCache.key = null;
+	offlineState.ready = catalog.loaded;
+	offlineState.catalogVersion = catalog.version;
+	const sig = bootstrapSignature();
+	if (sig !== afterSync.sig) {
+		if (afterSync.sig !== undefined) offlineState.bootstrapVersion++;
+		afterSync.sig = sig;
+	}
+}
+
+function runCatalogSync(opts = {}) {
+	const profile = offlineState.profile;
+	if (!profile || !offlineState.enabled) return Promise.resolve(false);
+	return syncCatalog(profile, { ...syncOptions, ...opts }).then((ok) => {
+		afterSync();
+		return ok;
+	});
+}
+
+/** A record the catalogue depends on changed on the server (realtime event). */
+function onRemoteChange(message) {
+	offlineState.lastRemoteChange = { at: new Date().toISOString(), kinds: (message && message.kinds) || [] };
+	if (!offlineState.enabled || !network.isOnline) return; // the reconnect sync will pick it up
+	if (syncState.running) {
+		remotePending = true;
+		return;
+	}
+	clearTimeout(remoteTimer);
+	const wait = Math.max(REMOTE_DEBOUNCE_MS, lastRemoteSync + REMOTE_MIN_INTERVAL_MS - Date.now());
+	remoteTimer = setTimeout(async () => {
+		lastRemoteSync = Date.now();
+		remotePending = false;
+		await runCatalogSync();
+		if (remotePending) onRemoteChange(offlineState.lastRemoteChange);
+	}, wait);
+}
+
+function bindRealtime() {
+	if (realtimeBound || typeof window === "undefined") return;
+	const rt = window.frappe && frappe.realtime;
+	if (!rt || typeof rt.on !== "function") return;
+	realtimeBound = true;
+	rt.on("posa_catalog_changed", onRemoteChange);
+}
 
 function bootstrap() {
 	return catalog.getMeta("bootstrap") || {};
@@ -76,7 +157,8 @@ export const offlinePos = {
 		const profile = data && data.pos_profile;
 		if (!profile) return;
 		offlineState.profile = profile;
-		offlineState.enabled = !!Number(profile.posa_enable_offline);
+		// posa_enable_offline_invoices = the v14 build's checkbox, kept working after migrating
+		offlineState.enabled = !!Number(profile.posa_enable_offline || profile.posa_enable_offline_invoices);
 		if (!offlineState.enabled) return;
 		startConnectivityMonitor();
 		requestPersistentStorage();
@@ -105,26 +187,35 @@ export const offlinePos = {
 		} finally {
 			offlineState.loading = false;
 		}
-		const options = {
+		syncOptions = {
 			includeStock: profile.posa_offline_sync_stock === undefined ? true : !!Number(profile.posa_offline_sync_stock),
 			includeCustomers:
 				profile.posa_offline_sync_customers === undefined ? true : !!Number(profile.posa_offline_sync_customers),
 		};
+		afterSync.sig = bootstrapSignature();
 		startQueue({ batchSize: Number(profile.posa_offline_invoice_batch) || 20 });
 		onQueueSynced(() => this.refreshPendingStock());
 		if (network.isOnline) {
 			// never block the POS start: until the first download finishes the
 			// item list keeps coming from the server (online mode)
-			syncCatalog(profile, options).then(() => {
-				offlineState.ready = catalog.loaded;
-				posItemsCache.key = null;
-				offlineState.catalogVersion = catalog.version;
+			runCatalogSync();
+			drafts.uploadHolds().catch(() => {});
+		}
+		// fallback for missed realtime events (socket down, terminal asleep)
+		startPeriodicSync(profile, Number(profile.posa_offline_sync_interval) || 10, syncOptions, afterSync);
+		// instant updates: ERPNext pushes "posa_catalog_changed" when Items, Item Prices,
+		// Customers, POS Offers / Coupons, Referral Codes, RFID Cards, Item Groups,
+		// Price Lists, the POS Profile or tax templates are created / changed / deleted
+		bindRealtime();
+		if (!this._connectivityBound) {
+			this._connectivityBound = true;
+			onConnectivityChange((online) => {
+				if (online) {
+					runCatalogSync();
+					drafts.uploadHolds().catch(() => {});
+				}
 			});
 		}
-		startPeriodicSync(profile, Number(profile.posa_offline_sync_interval) || 10, options);
-		onConnectivityChange((online) => {
-			if (online) syncCatalog(profile, options).then(() => (offlineState.catalogVersion = catalog.version));
-		});
 	},
 
 	/** Opening data saved by the last online start (for starting while offline). */
@@ -148,9 +239,7 @@ export const offlinePos = {
 		if (!profile) return Promise.resolve(false);
 		posItemsCache.key = null;
 		// manual sync: re-check the server first instead of waiting for the next poll
-		return ping().then(() => Promise.all([syncCatalog(profile, { full }), syncQueue()])).then(() => {
-			offlineState.catalogVersion = catalog.version;
-		});
+		return ping().then(() => Promise.all([runCatalogSync({ full }), syncQueue()]));
 	},
 
 	catalogAgeDays,
@@ -335,6 +424,25 @@ export const offlinePos = {
 		return row;
 	},
 
+	/** Active Referral Code by its code (cached from the server, works offline). */
+	referralCode(code) {
+		const c = String(code || "").trim().toLowerCase();
+		if (!c) return null;
+		return (bootstrap().referral_codes || []).find((r) => String(r.referral_code || r.name).toLowerCase() === c) || null;
+	},
+
+	/** Enabled RFID Card by number (cached, works offline). */
+	rfidCard(number) {
+		const n = String(number || "").trim();
+		if (!n) return null;
+		return (bootstrap().rfid_cards || []).find((r) => r.rfid_number === n || r.name === n) || null;
+	},
+
+	/** POS Offers as last downloaded (refreshed on every sync / realtime change). */
+	offers() {
+		return bootstrap().offers || [];
+	},
+
 	// --------------------------------------------------------------- invoices
 	/**
 	 * Local replacement for update_invoice(): returns the invoice doc with totals,
@@ -440,7 +548,13 @@ export const offlinePos = {
 		const offlineCustomer = customer && customer.__offline ? { ...customer } : null;
 		// strip UI-only fields
 		delete doc.__offline;
+		delete doc.__hold;
+		// The sale may be a server draft resumed offline: its name tells the server
+		// which draft becomes this sale (no second invoice). The sale id
+		// (posa_offline_id) is the queue key and the server-side dedupe key.
+		if (!drafts.isLocalName(doc.name)) doc.posa_draft_name = doc.name;
 		delete doc.name;
+		const saleId = doc.posa_offline_id || null;
 		for (const row of doc.items || []) {
 			for (const k of Object.keys(row)) if (k.startsWith("_")) delete row[k];
 			delete row.serial_no_data;
@@ -449,7 +563,10 @@ export const offlinePos = {
 			delete row.uom_prices;
 			delete row.item_barcode;
 		}
-		const record = await enqueueInvoice({ invoice: doc, data, offlineCustomer });
+		// FBR: the server sends a sale to FBR only when its receipt was printed.
+		const submitData = Object.assign({}, data, { posa_print: print ? 1 : 0 });
+		const record = await enqueueInvoice({ invoice: doc, data: submitData, offlineCustomer, offlineId: saleId });
+		await drafts.forgetSale({ name: doc.posa_draft_name, saleId: record.offline_id }).catch(() => {});
 		// incremental: a full rescan of the queue + catalogue rebuild per sale got slow
 		// with 1000+ queued invoices (refreshPendingStock still runs after every sync)
 		if (doc.update_stock) {
@@ -470,9 +587,51 @@ export const offlinePos = {
 		return record;
 	},
 
+	// sale ids, drafts and held carts (see drafts.js)
+	newSaleId: () => newOfflineId(),
+	isLocalName: drafts.isLocalName,
+	saveShiftDrafts: drafts.saveShiftDrafts,
+	upsertDraft: drafts.upsertDraft,
+	forgetSale: drafts.forgetSale,
+	holdCart: drafts.holdCart,
+	releaseHold: drafts.releaseHold,
+	draftList: drafts.draftList,
+	draftCount: drafts.draftCount,
+	uploadHolds: drafts.uploadHolds,
+
+	/**
+	 * Drafts of the shift for Resume / Hold lists. Online: from the server (and
+	 * stored); server unreachable: the stored copy. Carts held offline first.
+	 * Never shows an error dialog.
+	 */
+	async loadDrafts(shift) {
+		const local = offlineState.enabled;
+		if (local && this.useOffline()) return drafts.draftList(shift, null);
+		try {
+			const rows = (await serverCall("posawesome.posawesome.api.posapp.get_draft_invoices", { pos_opening_shift: shift })) || [];
+			return local ? drafts.draftList(shift, rows) : rows;
+		} catch (e) {
+			if (local && e instanceof NetworkError) return drafts.draftList(shift, null);
+			throw e;
+		}
+	},
+
 	print(record) {
+		// Printed now (e.g. Print Last Invoice): the sale goes to FBR too.
+		markPrinted(record).catch(() => {});
 		const b = bootstrap();
-		return printOfflineReceipt(record, { company: b.company, profile: offlineState.profile || b.pos_profile });
+		const ctx = { company: b.company, profile: offlineState.profile || b.pos_profile };
+		// QZ Tray (POS Profile: Use QZ Tray for Silent Print) prints without the
+		// browser dialog; when QZ Tray is not there the browser print opens.
+		if (qzPrint.enabled()) {
+			const html = receiptHtml(record, ctx);
+			const label = record.invoice && record.invoice.is_return ? __("RETURN - PENDING SYNC") : __("OFFLINE SALE - PENDING SYNC");
+			qzPrint
+				.printOffline(qzPrint.offlineDoc(record), html, label)
+				.catch((e) => qzPrint.printFallback(e, () => printOfflineReceipt(record, ctx)));
+			return html;
+		}
+		return printOfflineReceipt(record, ctx);
 	},
 
 	// queue management (OfflineStatus panel)

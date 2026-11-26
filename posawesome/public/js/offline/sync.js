@@ -31,9 +31,24 @@ function priceListKey(lists) {
 	return "cursor_prices__" + [...lists].sort().join("|");
 }
 
+const DELTA_OVERLAP_SECONDS = 120;
+
+/** "YYYY-MM-DD HH:MM:SS[.ffffff]" (server time, no zone) moved by `seconds`. */
+export function shiftTimestamp(value, seconds) {
+	const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(String(value));
+	if (!m) return value;
+	const t = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]) + seconds * 1000);
+	const p = (n) => String(n).padStart(2, "0");
+	return `${t.getUTCFullYear()}-${p(t.getUTCMonth() + 1)}-${p(t.getUTCDate())} ${p(t.getUTCHours())}:${p(t.getUTCMinutes())}:${p(t.getUTCSeconds())}`;
+}
+
 async function pull(resource, method, args, apply, progressTotal) {
 	const cursorKey = args.cursorKey || `cursor_${resource}`;
 	let cursor = catalog.getMeta(cursorKey);
+	// Delta pulls re-read the last couple of minutes: a row saved in a
+	// transaction that committed late carries an older `modified` than rows
+	// already pulled, and a plain cursor would skip it. Re-applying is harmless.
+	if (cursor && cursor.since) cursor = { since: shiftTimestamp(cursor.since, -DELTA_OVERLAP_SECONDS), after: "" };
 	let pages = 0;
 	syncState.stage = resource;
 	syncState.done = 0;
@@ -96,7 +111,31 @@ export function syncCatalog(profile, { full = false, includeStock = true, includ
 			const startedAt = bootstrap.server_time;
 			await catalog.setMeta("bootstrap", bootstrap);
 
-			await pull("items", "get_items_page", {}, (rows) => catalog.applyItems(rows), counts.items);
+			// the profile's item groups / template setting / customer groups changed:
+			// download those tables again from the start, then drop rows that are no
+			// longer in scope (no empty window: rows are replaced as pages arrive)
+			const scope = bootstrap.scope || null;
+			const prevScope = catalog.getMeta("scope");
+			const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+			const refreshItems =
+				!isFirst && scope && prevScope &&
+				!same([prevScope.item_groups, prevScope.show_template_items], [scope.item_groups, scope.show_template_items]);
+			const refreshCustomers = !isFirst && scope && prevScope && !same(prevScope.customer_groups, scope.customer_groups);
+			if (refreshItems) await catalog.setMeta("cursor_items", null);
+			if (refreshCustomers) await catalog.setMeta("cursor_customers", null);
+
+			const seenItems = refreshItems ? new Set() : null;
+			await pull(
+				"items",
+				"get_items_page",
+				{},
+				(rows) => {
+					if (seenItems) for (const r of rows) if (!r.deleted) seenItems.add(r.item_code);
+					return catalog.applyItems(rows);
+				},
+				counts.items
+			);
+			if (seenItems) await catalog.pruneItems(seenItems);
 
 			const lists = new Set([profile.selling_price_list]);
 			if (profile.posa_mrp_price_list) lists.add(profile.posa_mrp_price_list);
@@ -115,8 +154,20 @@ export function syncCatalog(profile, { full = false, includeStock = true, includ
 				await pull("stock", "get_stock_page", {}, (rows) => catalog.applyStock(rows), counts.stock);
 			}
 			if (includeCustomers) {
-				await pull("customers", "get_customers_page", {}, (rows) => catalog.applyCustomers(rows), counts.customers);
+				const seenCustomers = refreshCustomers ? new Set() : null;
+				await pull(
+					"customers",
+					"get_customers_page",
+					{},
+					(rows) => {
+						if (seenCustomers) for (const r of rows) if (!r.deleted) seenCustomers.add(r.name);
+						return catalog.applyCustomers(rows);
+					},
+					counts.customers
+				);
+				if (seenCustomers) await catalog.pruneCustomers(seenCustomers);
 			}
+			if (scope) await catalog.setMeta("scope", scope);
 
 			// deletions since the previous sync
 			const deletedSince = catalog.getMeta("deleted_since");
@@ -156,11 +207,14 @@ export function syncCatalog(profile, { full = false, includeStock = true, includ
 let timer = null;
 
 /** Background delta sync every `minutes` while online. */
-export function startPeriodicSync(profile, minutes = 10, options = {}) {
+export function startPeriodicSync(profile, minutes = 10, options = {}, onDone = null) {
 	stopPeriodicSync();
 	const interval = Math.max(1, Number(minutes) || 10) * 60000;
 	const tick = async () => {
-		if (network.isOnline && !document.hidden) await syncCatalog(profile, options);
+		if (network.isOnline && !document.hidden) {
+			const ok = await syncCatalog(profile, options);
+			if (onDone) onDone(ok);
+		}
 		timer = setTimeout(tick, interval);
 	};
 	timer = setTimeout(tick, interval);

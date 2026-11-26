@@ -1,0 +1,191 @@
+{
+ "actions": [],
+ "creation": "2026-11-25 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "zone",
+  "slide_type",
+  "title",
+  "subtitle",
+  "column_break_content",
+  "image",
+  "video",
+  "video_url",
+  "item_code",
+  "pos_offer",
+  "fit",
+  "duration",
+  "show_on",
+  "section_schedule",
+  "valid_from",
+  "valid_upto",
+  "column_break_sched",
+  "from_time",
+  "to_time",
+  "weekdays"
+ ],
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "zone",
+   "fieldtype": "Select",
+   "label": "Area",
+   "options": "Centre\nLeft Sidebar\nRight Sidebar",
+   "default": "Centre",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "slide_type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Image\nVideo\nItem\nPOS Offer\nText",
+   "default": "Image",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "in_list_view": 1,
+   "columns": 3,
+   "description": "Shown over images and videos; the headline of a Text slide"
+  },
+  {
+   "fieldname": "subtitle",
+   "fieldtype": "Small Text",
+   "label": "Subtitle"
+  },
+  {
+   "fieldname": "column_break_content",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "label": "Image",
+   "depends_on": "eval:doc.slide_type=='Image' || doc.slide_type=='Text'",
+   "mandatory_depends_on": "eval:doc.slide_type=='Image'",
+   "description": "Upload as a public file. Text slides use it as background."
+  },
+  {
+   "fieldname": "video",
+   "fieldtype": "Attach",
+   "label": "Video File",
+   "depends_on": "eval:doc.slide_type=='Video'",
+   "description": "MP4 or WebM, uploaded as a public file"
+  },
+  {
+   "fieldname": "video_url",
+   "fieldtype": "Data",
+   "label": "Or Video Link",
+   "options": "URL",
+   "depends_on": "eval:doc.slide_type=='Video'",
+   "description": "https link to an MP4 / WebM file (not a YouTube page)"
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item",
+   "depends_on": "eval:doc.slide_type=='Item'",
+   "mandatory_depends_on": "eval:doc.slide_type=='Item'",
+   "description": "Shows the item with its live price from this kiosk's price list"
+  },
+  {
+   "fieldname": "pos_offer",
+   "fieldtype": "Link",
+   "label": "POS Offer",
+   "options": "POS Offer",
+   "depends_on": "eval:doc.slide_type=='POS Offer'",
+   "mandatory_depends_on": "eval:doc.slide_type=='POS Offer'"
+  },
+  {
+   "fieldname": "fit",
+   "fieldtype": "Select",
+   "label": "Image Fit",
+   "options": "Cover\nContain",
+   "default": "Cover",
+   "depends_on": "eval:doc.slide_type=='Image' || doc.slide_type=='Video'"
+  },
+  {
+   "fieldname": "duration",
+   "fieldtype": "Int",
+   "label": "Seconds On Screen",
+   "in_list_view": 1,
+   "columns": 1,
+   "non_negative": 1,
+   "description": "0 = the display's default. Videos play to the end unless this is set."
+  },
+  {
+   "fieldname": "show_on",
+   "fieldtype": "Select",
+   "label": "Show On",
+   "options": "All Screens\nLandscape Only\nPortrait Only",
+   "default": "All Screens",
+   "description": "Upload a wide picture for landscape screens and a tall one for portrait screens"
+  },
+  {
+   "fieldname": "section_schedule",
+   "fieldtype": "Section Break",
+   "label": "Schedule",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "label": "Valid From"
+  },
+  {
+   "fieldname": "valid_upto",
+   "fieldtype": "Date",
+   "label": "Valid Upto"
+  },
+  {
+   "fieldname": "column_break_sched",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "from_time",
+   "fieldtype": "Time",
+   "label": "Daily From",
+   "description": "Empty = all day. A window that ends before it starts runs past midnight (e.g. 22:00 to 02:00)."
+  },
+  {
+   "fieldname": "to_time",
+   "fieldtype": "Time",
+   "label": "Daily To"
+  },
+  {
+   "fieldname": "weekdays",
+   "fieldtype": "Data",
+   "label": "Days",
+   "description": "Empty = every day, or a list such as Fri,Sat,Sun"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-25 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Kiosk Slide",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "istable": 1,
+ "editable_grid": 0
+}

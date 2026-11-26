@@ -101,7 +101,7 @@ function posa_pos_profile_help_content() {
                         <li>{{__("Screen and Search: screen layout, search and camera scanning, cache and background submit.")}}</li>
                         <li>{{__("Shift and Cash: closing options, closing denominations, cash mode of payment for expenses, POS payments.")}}</li>
                         <li>{{__("Printing and FBR: closing and expense print formats, QZ Tray silent printing, FBR integration (only printed invoices are sent).")}}</li>
-                        <li>{{__("Restaurant and KDS: KOT on each save, order types, service zones, captains and buffet.")}}</li>
+                        <li>{{__("Restaurant and KDS: KOT on each save, order types, service zones, captains, buffet and Fine Dining (guests, seats, modifiers, courses, void / comp, pre-bill).")}}</li>
                         <li>{{__("Offline and Devices: offline mode, weighing-scale barcodes and the customer pole display (VFD).")}}</li>
                         <li>{{__("Save, then open the POS (/app/rmsapp or /app/waiterapp) to check.")}}</li>
                     </ol>
@@ -138,6 +138,28 @@ function posa_pos_profile_help_content() {
             </tr>
             <tr>
                 <td>
+                    <h4><i class="fa fa-glass"></i> {{__("Fine Dining Flow")}}</h4>
+                    <ol>
+                        <li>{{__("Enable Fine Dining, then tick the features you want; each one can be switched off again.")}}</li>
+                        <li>{{__("Guests: after choosing the table the POS asks the number of guests (required before sending when Covers Required is ticked).")}}</li>
+                        <li>{{__("Seats: pick the seat on the bar above the cart; new items get that seat (All = shared by the table).")}}</li>
+                        <li>{{__("Modifiers: items with a POS Modifier Group open the options window; paid add-ons are added under the item.")}}</li>
+                        <li>{{__("Courses: items get their course from POS Course; held courses (Mains, Desserts) wait until the waiter presses Fire.")}}</li>
+                        <li>{{__("Void / Comp: taking off an item the kitchen already has asks for a reason (and a manager when required) and sends a VOID ticket; Comp makes an item free with a reason. All in POS Void Log.")}}</li>
+                        <li>{{__("Pre-Bill: prints the Guest Check (not a tax invoice, not sent to FBR) before payment.")}}</li>
+                        <li>{{__("Floor: the Floor button shows every table with its status (Free, Seated, Ordered, Course waiting, Bill requested, Cleaning). Tap a table to open its order, start a new one, move it to another table, merge two tables or hand it to another waiter.")}}</li>
+                        <li>{{__("Split: by seat or by item into separate checks of the same table (the kitchen keeps its count, nothing is cooked twice), or equal shares printed on the guest check.")}}</li>
+                        <li>{{__("Kitchen: the Expo page (/desk/fd_expo) shows each table's courses (held, cooking, ready, served) and the pass serves a course; cooks tap items when done and can Recall a ticket; tickets turn amber / red against the target minutes.")}}</li>
+                        <li>{{__("86: dishes marked unavailable (86 button on the bar or on the kitchen display) cannot be ordered; every screen is told at once.")}}</li>
+                        <li>{{__("Allergens: put Allergens on items; the Allergies button records the guests' allergies; matching items are flagged for the waiter and on the kitchen ticket.")}}</li>
+                        <li>{{__("Guests: bookings and the waitlist on Floor > Bookings; Seat opens the order with the guests and their allergies. The guest's profile (VIP, visits, average bill, favourites, preferences, birthday) shows on the bar when the customer is chosen. The guest check prints a feedback QR code.")}}</li>
+                        <li>{{__("Waiter app offline: with Waiter App Works Offline (and Enable Offline Mode) the waiter tablet keeps the item catalogue; when the Wi-Fi drops, Make KOT keeps the order on the tablet and sends it to the server and the kitchen as soon as the connection is back.")}}</li>
+                        <li>{{__("Service charge and tips: a Service Charge row is added to dine-in orders (from a number of guests if set); the Tip button adds a tip before payment. Both are posted to their own accounts. POS Fine Dining Staff Report shows guests, sales, service charge, tips and each waiter's share of the tip pool.")}}</li>
+                    </ol>
+                </td>
+            </tr>
+            <tr>
+                <td>
                     <h4><i class="fa fa-wifi"></i> {{__("Offline Flow")}}</h4>
                     <ol>
                         <li>{{__("With Enable Offline Mode, the terminal keeps its catalogue in the browser and checks for changes regularly.")}}</li>
@@ -156,6 +178,7 @@ function posa_pos_profile_help_content() {
                         <li><b>{{__("Order Type / Service Zone / Service Table")}}</b> - {{__("restaurant ordering and table plan.")}}</li>
                         <li><b>{{__("Kitchen Production Unit")}}</b> - {{__("kitchen routing (KOT / KDS) and quick production.")}}</li>
                         <li><b>{{__("POS Kiosk Display")}}</b> - {{__("what the customer price checker screens of this profile show.")}}</li>
+                        <li><b>{{__("POS Course / POS Modifier Group / POS Void Reason")}}</b> - {{__("fine dining courses, item options and void / comp reasons.")}}</li>
                     </ul>
                 </td>
             </tr>

@@ -1,0 +1,156 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 16:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sales_invoice",
+  "customer",
+  "guest_name",
+  "pos_profile",
+  "column_break_f1",
+  "service_table",
+  "waiter",
+  "source",
+  "section_ratings",
+  "food_rating",
+  "service_rating",
+  "ambience_rating",
+  "column_break_f2",
+  "comments"
+ ],
+ "fields": [
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Bill",
+   "options": "Sales Invoice",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "guest_name",
+   "fieldtype": "Data",
+   "label": "Guest Name"
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_f1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "service_table",
+   "fieldtype": "Link",
+   "label": "Table",
+   "options": "Service Table",
+   "read_only": 1
+  },
+  {
+   "fieldname": "waiter",
+   "fieldtype": "Link",
+   "label": "Waiter",
+   "options": "User",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Select",
+   "label": "Source",
+   "options": "Guest Link\nStaff",
+   "default": "Staff"
+  },
+  {
+   "fieldname": "section_ratings",
+   "fieldtype": "Section Break",
+   "label": "Ratings"
+  },
+  {
+   "fieldname": "food_rating",
+   "fieldtype": "Rating",
+   "label": "Food",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "service_rating",
+   "fieldtype": "Rating",
+   "label": "Service",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ambience_rating",
+   "fieldtype": "Rating",
+   "label": "Ambience",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_f2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "comments",
+   "fieldtype": "Small Text",
+   "label": "Comments"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-26 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Guest Feedback",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "create": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "format:FB-{YY}{MM}-{#####}",
+ "naming_rule": "Expression",
+ "title_field": "guest_name"
+}

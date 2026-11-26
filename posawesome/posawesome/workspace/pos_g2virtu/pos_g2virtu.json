@@ -142,7 +142,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Restaurant",
-   "link_count": 12,
+   "link_count": 20,
    "onboard": 0,
    "type": "Card Break"
   },
@@ -153,6 +153,17 @@
    "label": "Kitchen Display",
    "link_count": 0,
    "link_to": "kds",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Expo (Pass)",
+   "link_count": 0,
+   "link_to": "fd_expo",
    "link_type": "Page",
    "onboard": 0,
    "type": "Link"
@@ -279,6 +290,83 @@
    "type": "Link"
   },
   {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Course",
+   "link_count": 0,
+   "link_to": "POS Course",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Modifier Group",
+   "link_count": 0,
+   "link_to": "POS Modifier Group",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Void Reason",
+   "link_count": 0,
+   "link_to": "POS Void Reason",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Void Log",
+   "link_count": 0,
+   "link_to": "POS Void Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Allergen",
+   "link_count": 0,
+   "link_to": "POS Allergen",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Reservation",
+   "link_count": 0,
+   "link_to": "POS Reservation",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "POS Guest Feedback",
+   "link_count": 0,
+   "link_to": "POS Guest Feedback",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
    "hidden": 0,
    "is_query_report": 0,
    "label": "Price Checker Screens",
@@ -397,7 +485,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Reports",
-   "link_count": 5,
+   "link_count": 7,
    "onboard": 0,
    "type": "Card Break"
   },
@@ -441,6 +529,28 @@
    "label": "BOM Cost vs Sale Report",
    "link_count": 0,
    "link_to": "BOM Cost vs Sale Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "POS Fine Dining Staff Report",
+   "link_count": 0,
+   "link_to": "POS Fine Dining Staff Report",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "POS Fine Dining Analytics",
+   "link_count": 0,
+   "link_to": "POS Fine Dining Analytics",
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
@@ -638,7 +748,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-11-26 10:00:00.000000",
+ "modified": "2026-11-26 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "POSAwesome",
  "name": "POS G2Virtu",

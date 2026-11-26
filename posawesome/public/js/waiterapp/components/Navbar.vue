@@ -1275,10 +1275,8 @@ print_last_invoice_old() {
   color: #e0e0e0 !important;
 }
 
-.theme--dark .drawer-header {
-  .drawer-color {
-    color: #333 !important;
-  }
+.theme--dark .drawer-header .drawer-color {
+  color: #333 !important;
 }
 
 .theme--dark .calc-card {

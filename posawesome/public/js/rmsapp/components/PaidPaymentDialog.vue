@@ -227,6 +227,29 @@ export default {
   },
 
   methods: {
+    // Print the Payment Entry. With QZ Tray printing on (POS Profile), this
+    // goes straight to the receipt printer; otherwise the browser print opens.
+    load_print_page(payment_entry) {
+      if (!payment_entry) return;
+      const name = typeof payment_entry === "string" ? payment_entry : payment_entry.name;
+      if (!name) return;
+      const print_format = (this.pos_profile && this.pos_profile.custom_payment_entry_print_format) || "";
+      const letter_head = (this.pos_profile && this.pos_profile.letter_head) || 0;
+      const url =
+        frappe.urllib.get_base_url() +
+        "/printview?doctype=Payment%20Entry&name=" +
+        encodeURIComponent(name) +
+        "&trigger_print=1" +
+        (print_format ? "&format=" + encodeURIComponent(print_format) : "") +
+        "&no_letterhead=" +
+        letter_head;
+      const printWindow = window.open(url, "Print");
+      if (!printWindow) {
+        frappe.msgprint(__("Please allow popups in your browser to print the receipt."));
+        return;
+      }
+      printWindow.addEventListener("load", () => printWindow.print(), true);
+    },
 
     selectAllText() {
       if (this.$refs.amountField) {
@@ -344,7 +367,7 @@ export default {
       this.$nextTick(() => {
         setTimeout(() => {
           if (this.$refs.modeOfPaymentField) {
-            this.$refs.modeOfPaymentField.focus();
+            this.$refs.modeOfPaymentField?.focus?.();
           }
         }, 100);
       });
@@ -420,7 +443,7 @@ export default {
       this.$nextTick(() => {
         setTimeout(() => {
           if (this.$refs.amountField) {
-            this.$refs.amountField.focus();
+            this.$refs.amountField?.focus?.();
           }
         }, 100);
       });

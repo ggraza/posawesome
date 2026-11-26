@@ -104,6 +104,14 @@
 
 <script>
 import { evntBus } from '../../bus';
+import offlinePos from '../../../offline';
+
+// Fine dining: the waiter app works offline when the POS Profile asks for it
+// (Waiter App Works Offline + Enable Offline Mode). Otherwise nothing changes.
+function waiterOffline(p) {
+  return !!(p && Number(p.posa_enable_fine_dining) && Number(p.posa_fd_waiter_offline) &&
+    Number(p.posa_enable_offline || p.posa_enable_offline_invoices));
+}
 import ItemsSelector from './ItemsSelector.vue';
 import Invoice from './Invoice.vue';
 import OpeningDialog from './OpeningDialog.vue';
@@ -167,13 +175,17 @@ check_opening_entry() {
         {
             user: frappe.session.user,
         }
-    ).then((r) => {
+    ).then(async (r) => {
 
         if (!r.message) {
             return;
         }
 
         const data = r.message;
+        if (data.pos_profile && waiterOffline(data.pos_profile)) {
+            // the item catalogue on this tablet, and orders kept here while offline
+            await offlinePos.init(data).catch((e) => console.error('[posawesome] waiter offline init failed', e));
+        }
 
         if (data.status === "no_pos_profile") {
             frappe.msgprint({
@@ -207,6 +219,22 @@ check_opening_entry() {
 
         evntBus.$emit("register_pos_profile", data);
         evntBus.$emit("set_company", data.pos_profile.company);
+    }).catch((e) => {
+        // server unreachable: continue with the shift saved by the last online start
+        const cached = offlinePos.lastOpeningData();
+        const down = (typeof navigator !== 'undefined' && navigator.onLine === false) || !e || !e.status;
+        if (down && cached && cached.pos_profile && waiterOffline(cached.pos_profile)) {
+            evntBus.$emit('show_mesage', {
+                text: __('Server unreachable - working offline with shift {0}', [cached.pos_opening_shift.name]),
+                color: 'warning',
+            });
+            this.pos_profile = cached.pos_profile;
+            this.pos_opening_shift = cached.pos_opening_shift;
+            return offlinePos.init(cached).catch(() => {}).then(() => {
+                evntBus.$emit("register_pos_profile", cached);
+                evntBus.$emit("set_company", cached.pos_profile.company);
+            });
+        }
     });
 },
     check_opening_entry_cashier() {

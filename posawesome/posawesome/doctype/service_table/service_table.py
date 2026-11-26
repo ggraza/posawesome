@@ -58,13 +58,25 @@ def on_update_service_table(doc, method):
         update_service_table(doc.posa_service_table, "Occupied")
 
 
+def _status_after_close(doc):
+    """Available, as before; with fine dining a table that still has another
+    open check stays Occupied, and goes to Cleaning when the profile asks."""
+    try:
+        from posawesome.posawesome.api.fine_dining_floor import table_status_after_close
+
+        return table_status_after_close(doc)
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "POS table status")
+        return "Available"
+
+
 def on_submit_service_table(doc, method):
     """
     Release table after invoice submission.
     """
 
     if doc.posa_service_table:
-        update_service_table(doc.posa_service_table, "Available")
+        update_service_table(doc.posa_service_table, _status_after_close(doc))
 
 
 def on_cancel_service_table(doc, method):
@@ -73,4 +85,4 @@ def on_cancel_service_table(doc, method):
     """
 
     if doc.posa_service_table:
-        update_service_table(doc.posa_service_table, "Available")
+        update_service_table(doc.posa_service_table, _status_after_close(doc))

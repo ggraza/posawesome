@@ -1,0 +1,152 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 16:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "group_name",
+  "sequence",
+  "disabled",
+  "column_break_m1",
+  "required",
+  "min_select",
+  "max_select",
+  "section_options",
+  "options",
+  "section_targets",
+  "applies_to",
+  "help_tab",
+  "pos_modifier_group_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "group_name",
+   "fieldtype": "Data",
+   "label": "Group Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "bold": 1,
+   "description": "Shown to the waiter, e.g. Steak Doneness, Choose a Side, Extras"
+  },
+  {
+   "fieldname": "sequence",
+   "fieldtype": "Int",
+   "label": "Sequence",
+   "non_negative": 1,
+   "description": "Order of the groups in the modifier window"
+  },
+  {
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled",
+   "default": "0"
+  },
+  {
+   "fieldname": "column_break_m1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "required",
+   "fieldtype": "Check",
+   "label": "Required",
+   "default": "0",
+   "in_list_view": 1,
+   "description": "The waiter must choose before the item is added"
+  },
+  {
+   "fieldname": "min_select",
+   "fieldtype": "Int",
+   "label": "Minimum Choices",
+   "non_negative": 1,
+   "default": "0"
+  },
+  {
+   "fieldname": "max_select",
+   "fieldtype": "Int",
+   "label": "Maximum Choices",
+   "non_negative": 1,
+   "default": "1",
+   "description": "1 = choose one. 0 = no limit."
+  },
+  {
+   "fieldname": "section_options",
+   "fieldtype": "Section Break",
+   "label": "Options"
+  },
+  {
+   "fieldname": "options",
+   "fieldtype": "Table",
+   "label": "Options",
+   "options": "POS Modifier Option",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_targets",
+   "fieldtype": "Section Break",
+   "label": "Applies To"
+  },
+  {
+   "fieldname": "applies_to",
+   "fieldtype": "Table",
+   "label": "Items / Item Groups",
+   "options": "POS Modifier Group Target",
+   "reqd": 1,
+   "description": "Each row: an Item, or an Item Group (all its items)"
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "pos_modifier_group_help",
+   "fieldtype": "HTML",
+   "label": "POS Modifier Group Help"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-26 04:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Modifier Group",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "sequence",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:group_name",
+ "naming_rule": "By fieldname",
+ "title_field": "group_name"
+}
