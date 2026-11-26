@@ -184,7 +184,7 @@ def create_journal_entry(doc, method):
 
     # Save & Submit
     je.insert(ignore_permissions=True)
-    je.submit()
+    # je.submit()
 
     frappe.msgprint(
         _("Journal Entry <b>{0}</b> created successfully").format(je.name)

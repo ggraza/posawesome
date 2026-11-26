@@ -16,7 +16,9 @@
   "cost_center",
   "apply_for_pos_profile_section",
   "profiles",
-  "profiles_list"
+  "profiles_list",
+  "help_tab",
+  "delivery_charges_help"
  ],
  "fields": [
   {
@@ -84,11 +86,21 @@
    "hidden": 1,
    "label": "Profiles List",
    "read_only": 1
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "delivery_charges_help",
+   "fieldtype": "HTML",
+   "label": "Delivery Charges Help"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-07-25 15:38:25.771590",
+ "modified": "2026-11-26 04:00:00.000000",
  "modified_by": "Administrator",
  "module": "POSAwesome",
  "name": "Delivery Charges",

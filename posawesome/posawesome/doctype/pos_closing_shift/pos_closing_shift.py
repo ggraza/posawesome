@@ -160,12 +160,16 @@ def get_pos_expense_invoice(pos_opening_shift):
 
 @frappe.whitelist()
 def get_payments_entries(pos_opening_shift):
-    return frappe.get_all(
+    """Payment Entries made from the POS in this shift. Money received
+    (Receive) adds to the expected amount of its mode of payment; money paid
+    out of the till (Pay, e.g. to a supplier) is returned negative, so it is
+    taken off."""
+    rows = frappe.get_all(
         "Payment Entry",
         filters={
             "docstatus": 1,
             "reference_no": pos_opening_shift,
-            "payment_type": "Receive",
+            "payment_type": ["in", ["Receive", "Pay"]],
         },
         fields=[
             "name",
@@ -173,9 +177,16 @@ def get_payments_entries(pos_opening_shift):
             "paid_amount",
             "reference_no",
             "posting_date",
+            "party_type",
             "party",
+            "payment_type",
         ],
+        order_by="creation asc",
     )
+    for row in rows:
+        if row.payment_type == "Pay":
+            row.paid_amount = -abs(flt(row.paid_amount))
+    return rows
 
 
 @frappe.whitelist()
@@ -332,7 +343,10 @@ def make_closing_shift_from_opening(opening_shift):
                     "mode_of_payment": py.mode_of_payment,
                     "paid_amount": py.paid_amount,
                     "posting_date": py.posting_date,
-                    "customer": py.party,
+                    "payment_type": py.payment_type,
+                    "party_type": py.party_type,
+                    "party": py.party,
+                    "customer": py.party if py.party_type == "Customer" else None,
                 }
             )
         )

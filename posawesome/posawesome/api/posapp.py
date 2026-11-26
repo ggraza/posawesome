@@ -4,7 +4,7 @@
 
 import json
 import frappe
-from frappe.utils import nowdate, flt, cstr, getdate, add_days
+from frappe.utils import add_days, cint, cstr, flt, getdate, nowdate
 from frappe import _
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import get_bank_cash_account
 from erpnext.stock.get_item_details import get_item_details
@@ -229,7 +229,8 @@ def get_items(
         limit = ""
 
         condition = ""
-        condition += get_item_group_condition(pos_profile.get("name"))
+        values = {}
+        condition += get_item_group_condition(pos_profile.get("name"), values)
 
         if use_limit_search:
             search_limit = pos_profile.get("posa_search_limit") or 500
@@ -244,12 +245,11 @@ def get_items(
             barcode = data.get("barcode") if data.get("barcode") else ""
 
             condition += get_seearch_items_conditions(
-                item_code, serial_no, batch_no, barcode
+                item_code, serial_no, batch_no, barcode, values
             )
             if item_group:
-                condition += " AND item_group like '%{item_group}%'".format(
-                    item_group=item_group
-                )
+                condition += " AND item_group like %(item_group_like)s"
+                values["item_group_like"] = "%{0}%".format(item_group)
             limit = " LIMIT {search_limit}".format(search_limit=search_limit)
 
         if not posa_show_template_items:
@@ -287,6 +287,7 @@ def get_items(
                 """.format(
                 condition=condition, limit=limit
             ),
+            values,
             as_dict=1,
         )
 
@@ -305,7 +306,8 @@ def get_items(
                 },
                 or_filters=[
                     ["valid_upto", ">=", today],
-                    ["valid_upto", "in", ["", None]],
+                    # v16 query engine: a NULL date never matches `in ["", None]`
+                    ["valid_upto", "is", "not set"],
                 ],
 #                order_by="valid_from DESC, valid_upto DESC",
                 order_by="valid_from ASC, valid_upto DESC",
@@ -333,7 +335,8 @@ def get_items(
                     },
                     or_filters=[
                         ["valid_upto", ">=", today],
-                        ["valid_upto", "in", ["", None]],
+                        # v16 query engine: a NULL date never matches `in ["", None]`
+                    ["valid_upto", "is", "not set"],
                     ],
                     order_by="valid_from ASC, valid_upto DESC",
                 )
@@ -504,13 +507,21 @@ def get_items(
         return _get_items(pos_profile, price_list, item_group, search_value, customer)
 
 
-def get_item_group_condition(pos_profile):
-    cond = " and 1=1"
-    item_groups = get_item_groups(pos_profile)
-    if item_groups:
-        cond = " and item_group in (%s)" % (", ".join(["%s"] * len(item_groups)))
+def get_item_group_condition(pos_profile, values=None):
+    """Item group filter of the POS Profile, as a parameterised condition.
 
-    return cond % tuple(item_groups)
+    Group names go in ``values`` (they can contain spaces, quotes, &), never
+    into the SQL text. Without ``values`` the names are escaped inline.
+    """
+    from posawesome.posawesome.api.offline import get_profile_item_groups
+
+    item_groups = get_profile_item_groups(pos_profile)
+    if not item_groups:
+        return " and 1=1"
+    if values is None:
+        return " and item_group in ({0})".format(", ".join(frappe.db.escape(g) for g in item_groups))
+    values["pos_item_groups"] = tuple(item_groups)
+    return " and item_group in %(pos_item_groups)s"
 
 
 def get_root_of(doctype):
@@ -667,9 +678,73 @@ def update_invoice_from_order(data):
 @frappe.whitelist()
 def update_invoice(data):
     data = json.loads(data) if isinstance(data, str) else data
+    resolve_sale_draft(data)
     invoice_doc = prepare_invoice_doc(data)
     invoice_doc.save()
     return invoice_doc
+
+
+# ---------------------------------------------------------------------------
+# One Sales Invoice per sale
+#
+# Every cart on the terminal carries a sale id in `posa_offline_id` from the
+# first save on. The draft, the online submit, a retry after a lost response
+# and the offline copy uploaded later all name the same sale, so the server
+# always finds the one invoice instead of making a second one.
+# ---------------------------------------------------------------------------
+
+
+class SaleAlreadySubmitted(frappe.ValidationError):
+    pass
+
+
+def find_sale_invoice(sale_id, for_update=False):
+    """(name, docstatus) of the live (not cancelled) invoice of this sale, or None."""
+    if not sale_id:
+        return None
+    row = frappe.db.get_value(
+        "Sales Invoice",
+        {"posa_offline_id": sale_id, "docstatus": ["<", 2]},
+        ["name", "docstatus"],
+        as_dict=True,
+        for_update=for_update,
+    )
+    return row
+
+
+def resolve_sale_draft(data):
+    """Point `data` at the existing draft of this sale (by name, else by sale id).
+
+    * a draft that was deleted meanwhile: saved as a new draft
+    * a sale whose first save reached the server but whose answer was lost:
+      the draft made then is reused, not a second one
+    * a sale already submitted: SaleAlreadySubmitted
+    """
+    sale_id = data.get("posa_offline_id")
+    name = data.get("name")
+    if name and not frappe.db.exists("Sales Invoice", name):
+        name = None
+    if not name and sale_id:
+        found = find_sale_invoice(sale_id)
+        if found:
+            name = found.name
+    if name:
+        docstatus = cint(frappe.db.get_value("Sales Invoice", name, "docstatus"))
+        if docstatus == 1:
+            frappe.throw(
+                _("This sale was already completed as {0}.").format(name),
+                SaleAlreadySubmitted,
+            )
+        if docstatus == 2:
+            name = None
+    if name:
+        data["name"] = name
+    else:
+        data.pop("name", None)
+    # the terminal's copy may be older than the draft on the server (saved by
+    # another tab, the offline sync or a retry): the cart is what counts
+    data.pop("modified", None)
+    return data
 
 
 def prepare_invoice_doc(data):
@@ -677,6 +752,8 @@ def prepare_invoice_doc(data):
     rules, without saving. Shared by the online flow and the offline sync."""
     if data.get("name"):
         invoice_doc = frappe.get_doc("Sales Invoice", data.get("name"))
+        data = dict(data)
+        data.pop("modified", None)
         invoice_doc.update(data)
     else:
         invoice_doc = frappe.get_doc(data)
@@ -770,7 +847,25 @@ def prepare_invoice_doc(data):
 def submit_invoice(invoice, data):
     data = json.loads(data) if isinstance(data, str) else data
     invoice = json.loads(invoice) if isinstance(invoice, str) else invoice
-    invoice_doc = frappe.get_doc("Sales Invoice", invoice.get("name"))
+    name = invoice.get("name")
+    if not name or not frappe.db.exists("Sales Invoice", name):
+        found = find_sale_invoice(invoice.get("posa_offline_id"))
+        if not found:
+            frappe.throw(_("The draft of this sale was not found. Please save it again."))
+        name = found.name
+    # lock the draft: a retry, the background job or the offline sync may be
+    # submitting the same sale right now
+    docstatus = cint(frappe.db.get_value("Sales Invoice", name, "docstatus", for_update=True))
+    if docstatus == 1:
+        # already submitted (a retry after a lost answer, or the offline copy
+        # / background job got there first): report success, change nothing
+        return {"name": name, "status": 1, "already_submitted": 1}
+    if docstatus == 2:
+        frappe.throw(_("Sales Invoice {0} is cancelled.").format(name))
+    invoice_doc = frappe.get_doc("Sales Invoice", name)
+    invoice = dict(invoice)
+    invoice.pop("modified", None)
+    invoice["name"] = name
     invoice_doc.update(invoice)
     return submit_invoice_doc(invoice_doc, invoice, data)
 
@@ -1067,6 +1162,9 @@ def submit_in_background_job(kwargs):
     cash_account = kwargs.get("cash_account")
     payments = kwargs.get("payments")
 
+    # the online retry or the offline sync may have submitted it meanwhile
+    if cint(frappe.db.get_value("Sales Invoice", invoice, "docstatus", for_update=True)) != 0:
+        return
     invoice_doc = frappe.get_doc("Sales Invoice", invoice)
     invoice_doc.submit()
     redeeming_customer_credit(
@@ -1589,7 +1687,10 @@ def get_offers(profile):
         values=values,
         as_dict=1,
     )
-    return data
+    # Item / group / brand lists (an offer can apply to several of them).
+    from posawesome.posawesome.doctype.pos_offer.pos_offer import attach_targets
+
+    return attach_targets(data)
 
 
 @frappe.whitelist()
@@ -2060,12 +2161,27 @@ def search_serial_or_batch_or_barcode_number(search_value, search_serial_no):
     return {}
 
 
-def get_seearch_items_conditions(item_code, serial_no, batch_no, barcode):
+def get_seearch_items_conditions(item_code, serial_no, batch_no, barcode, values=None):
+    """Search condition. With ``values`` (a dict passed on to frappe.db.sql) the
+    search text goes in as parameters, so the SQL text has no literal % signs."""
     if serial_no or batch_no or barcode:
-        return " and name = {0}".format(frappe.db.escape(item_code))
-    return """ and (name like {item_code} or item_name like {item_code})""".format(
-        item_code=frappe.db.escape("%" + item_code + "%")
-    )
+        if values is None:
+            return " and name = {0}".format(frappe.db.escape(item_code))
+        values["search_item_code"] = item_code
+        return " and name = %(search_item_code)s"
+    # Every word must appear in the code or the name, in any order and as part
+    # of a word: "sh palm hair" finds "180ML PALMOLIVE ... HAIR ... SHAMPU".
+    words = [w for w in (item_code or "").split() if w][:8] or [""]
+    if values is None:
+        return "".join(
+            """ and (name like {w} or item_name like {w})""".format(w=frappe.db.escape("%" + w + "%"))
+            for w in words
+        )
+    parts = []
+    for i, w in enumerate(words):
+        values["search_word_%d" % i] = "%" + w + "%"
+        parts.append(" and (name like %(search_word_{0})s or item_name like %(search_word_{0})s)".format(i))
+    return "".join(parts)
 
 @frappe.whitelist()
 def create_sales_invoice_from_order(sales_order):
@@ -2207,6 +2323,24 @@ def get_last_invoice():
 
 
 @frappe.whitelist()
+def get_last_expense_invoice():
+    """Name of the last submitted POS Expense Invoice made by this user (for reprint)."""
+    rows = frappe.db.sql(
+        """
+        SELECT name
+        FROM `tabPOS Expense Invoice`
+        WHERE owner=%s
+          AND docstatus=1
+        ORDER BY creation DESC
+        LIMIT 1
+        """,
+        frappe.session.user,
+        as_dict=True,
+    )
+    return rows[0].name if rows else None
+
+
+@frappe.whitelist()
 def create_supplier_payment(supplier, mode_of_payment, amount, pos_profile, pos_opening_shift):
     if not supplier or not mode_of_payment or not amount:
         frappe.throw(_("Missing required fields"))
@@ -2307,7 +2441,10 @@ def get_item_price_check(barcode, pos_profile):
         return None
 
     item = frappe.db.get_value(
-        "Item", item_code, ["item_code", "item_name", "stock_uom", "image"], as_dict=True
+        "Item",
+        item_code,
+        ["item_code", "item_name", "stock_uom", "image", "item_group", "brand"],
+        as_dict=True,
     )
 
     today = nowdate()
@@ -2348,4 +2485,92 @@ def get_item_price_check(barcode, pos_profile):
         "selling_rate": selling,
         "saved": saved,
         "saved_percent": (saved / mrp * 100) if mrp and saved else 0,
+        "offers": _price_check_offers(pos_profile.get("name"), item, selling),
     }
+
+
+def _price_check_offers(profile, item, selling):
+    """POS Offers valid today for this profile that apply to the item (by item
+    code, item group or brand) or to the whole bill, with the price after the
+    offer where it can be worked out."""
+    from frappe.utils import flt, strip_html
+
+    if not profile:
+        return []
+    try:
+        offers = get_offers(profile)
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Price check offers")
+        return []
+
+    # same matching as the cart: the offer's item / group / brand lists,
+    # or its single field for offers saved before the lists existed
+    from posawesome.posawesome.doctype.pos_offer.pos_offer import targets as offer_targets
+
+    item_value = {"Item Code": item.item_code, "Item Group": item.item_group, "Brand": item.brand}
+    out = []
+    for o in offers:
+        if o.get("offer") == "Loyalty Point":
+            continue
+        apply_on = o.get("apply_on")
+        if apply_on in item_value:
+            value = item_value[apply_on]
+            if not value or value not in offer_targets(o):
+                continue
+        elif apply_on != "Transaction":
+            continue
+
+        offer_price = None
+        discount = 0
+        if o.get("offer") == "Item Price" and selling:
+            dt = o.get("discount_type")
+            if dt == "Rate" and flt(o.get("rate")):
+                offer_price = flt(o.get("rate"))
+            elif dt == "Discount Percentage" and flt(o.get("discount_percentage")):
+                offer_price = selling * (1 - flt(o.get("discount_percentage")) / 100)
+            elif dt == "Discount Amount" and flt(o.get("discount_amount")):
+                offer_price = selling - flt(o.get("discount_amount"))
+            if offer_price is not None:
+                offer_price = max(flt(offer_price, 2), 0)
+                discount = max(flt(selling - offer_price, 2), 0)
+
+        give_item = None
+        if o.get("offer") == "Give Product":
+            if o.get("replace_item") or o.get("replace_cheapest_item"):
+                give_item = item.item_name
+            elif o.get("apply_type") == "Item Code" and o.get("apply_item_code"):
+                give_item = (
+                    frappe.db.get_value("Item", o.get("apply_item_code"), "item_name")
+                    or o.get("apply_item_code")
+                )
+            elif o.get("apply_type") == "Item Group" and o.get("apply_item_group"):
+                give_item = o.get("apply_item_group")
+
+        out.append(
+            {
+                "name": o.get("name"),
+                "title": o.get("title") or o.get("name"),
+                "offer": o.get("offer"),
+                "apply_on": apply_on,
+                "discount_type": o.get("discount_type"),
+                "discount_percentage": flt(o.get("discount_percentage")),
+                "discount_amount": flt(o.get("discount_amount")),
+                "rate": flt(o.get("rate")),
+                "discount_category": o.get("discount_category"),
+                "min_qty": flt(o.get("min_qty")),
+                "max_qty": flt(o.get("max_qty")),
+                "min_amt": flt(o.get("min_amt")),
+                "given_qty": flt(o.get("given_qty")),
+                "is_recursive": cint(o.get("is_recursive")),
+                "max_given_qty": flt(o.get("max_given_qty")),
+                "give_item": give_item,
+                "valid_upto": str(o.get("valid_upto")) if o.get("valid_upto") else None,
+                "coupon_based": o.get("coupon_based"),
+                "description": strip_html(o.get("description") or "").strip(),
+                "offer_price": offer_price,
+                "offer_discount": discount,
+            }
+        )
+    # item offers first, then whole-bill ones
+    out.sort(key=lambda r: 1 if r["apply_on"] == "Transaction" else 0)
+    return out

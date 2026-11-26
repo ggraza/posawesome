@@ -24,7 +24,7 @@ frappe.ui.form.on("Sales Invoice", {
 
         if(frm.doc.docstatus == 1){
 
-            frm.add_custom_button('<i class="fa fa-print"></i> ' + __("Print"), ()=>{
+            frm.add_custom_button(__("Print"), ()=>{
                 
                 // Check if we should send to FBR
                 if(frm.doc.custom_allow_fbr_on_submit == 1 && frm.doc.pos_id && frm.doc.fbr_pos_token && is_null(frm.doc.fbr_invoice_no)){

@@ -27,27 +27,6 @@
 
       <v-spacer></v-spacer>
 
-      <div class="profile-section mx-1" @click="$refs.PaidPaymentDialog.open(pos_profile)">
-        <v-chip color="primary" variant="outlined" class="profile-chip">
-          <v-icon color="error" start @click="$refs.PaidPaymentDialog.open(pos_profile)">mdi-credit-card-minus</v-icon>
-          Pay Payments
-        </v-chip>
-      </div>
-
-      <div class="profile-section mx-1" @click="$refs.advancePaymentDialog.open(pos_profile)">
-        <v-chip color="primary" variant="outlined" class="profile-chip">
-          <v-icon color="error" start @click="$refs.advancePaymentDialog.open(pos_profile)">mdi-credit-card-plus</v-icon>
-          Receive Payments
-        </v-chip>
-      </div>
-
-      <div class="profile-section mx-1" @click="$refs.createPurchaseDialog.open(pos_profile)">
-        <v-chip color="warning" variant="outlined" class="profile-chip">
-          <v-icon color="warning" start @click="$refs.createPurchaseDialog.open(pos_profile)">mdi-cart-plus</v-icon>
-          Create Purchase
-        </v-chip>
-      </div>
-
       <!-- POS Expense Button with Tooltip -->
       <div class="profile-section mx-1" @click="openExpense">
         <v-chip color="primary" variant="outlined" class="profile-chip">
@@ -153,6 +132,15 @@
 
       <OfflineStatus />
 
+      <!-- Customer pole display (VFD): click to choose the port, then click to test -->
+      <div v-if="pos_profile.posa_enable_vfd" class="profile-section mx-1" @click="vfd_chip_click">
+        <v-chip :color="vfd_state.connected ? 'success' : 'warning'" variant="outlined" class="profile-chip"
+          :title="vfd_chip_title">
+          <v-icon start>{{ vfd_state.connected ? 'mdi-monitor' : 'mdi-monitor-off' }}</v-icon>
+          {{ __('Display') }}
+        </v-chip>
+      </div>
+
       <div class="profile-section mx-1">
         <v-chip color="primary" variant="outlined" class="profile-chip">
           <v-icon start>mdi-account-circle</v-icon>
@@ -161,7 +149,7 @@
       </div>
 
       <div class="text-center">
-        <v-menu :min-width="240" :close-on-content-click="false" location="bottom">
+        <v-menu v-model="menu" :min-width="240" :close-on-content-click="false" location="bottom">
           <template v-slot:activator="{ props }">
             <v-btn color="primary" v-bind="props" class="menu-btn-compact">
               Menu
@@ -174,6 +162,41 @@
               <span class="menu-header-text-compact">{{ __('Actions') }}</span>
             </div>
             <v-list density="compact" class="menu-list-compact">
+                <!-- moved here from the navbar: Pay / Receive Payments, Create Purchase -->
+                <v-list-item @click="open_menu_dialog('PaidPaymentDialog')" class="menu-item-compact danger-action">
+                  <template #prepend>
+                    <div class="menu-icon-wrapper-compact danger-icon">
+                      <v-icon color="white" size="16">mdi-credit-card-minus</v-icon>
+                    </div>
+                  </template>
+                  <div class="menu-content-compact">
+                    <v-list-item-title class="menu-item-title-compact">{{ __('Pay Payments') }}</v-list-item-title>
+                    <v-list-item-subtitle class="menu-item-subtitle-compact">{{ __('To a supplier') }}</v-list-item-subtitle>
+                  </div>
+                </v-list-item>
+                <v-list-item @click="open_menu_dialog('advancePaymentDialog')" class="menu-item-compact">
+                  <template #prepend>
+                    <div class="menu-icon-wrapper-compact success-icon">
+                      <v-icon color="white" size="16">mdi-credit-card-plus</v-icon>
+                    </div>
+                  </template>
+                  <div class="menu-content-compact">
+                    <v-list-item-title class="menu-item-title-compact">{{ __('Receive Payments') }}</v-list-item-title>
+                    <v-list-item-subtitle class="menu-item-subtitle-compact">{{ __('From a customer') }}</v-list-item-subtitle>
+                  </div>
+                </v-list-item>
+                <v-list-item @click="open_menu_dialog('createPurchaseDialog')" class="menu-item-compact">
+                  <template #prepend>
+                    <div class="menu-icon-wrapper-compact warning-icon">
+                      <v-icon color="white" size="16">mdi-cart-plus</v-icon>
+                    </div>
+                  </template>
+                  <div class="menu-content-compact">
+                    <v-list-item-title class="menu-item-title-compact">{{ __('Create Purchase') }}</v-list-item-title>
+                    <v-list-item-subtitle class="menu-item-subtitle-compact">{{ __('From a supplier') }}</v-list-item-subtitle>
+                  </div>
+                </v-list-item>
+                <v-divider class="menu-section-divider-compact"></v-divider>
                 <v-list-item
                   @click="close_shift_dialog"
                   v-if="!pos_profile.posa_hide_closing_shift"
@@ -190,6 +213,23 @@
                   </div>
                 </v-list-item>
                 <v-list-item
+                  @click="connect_vfd"
+                  v-if="pos_profile.posa_enable_vfd"
+                  class="menu-item-compact secondary-action"
+                >
+                  <template #prepend>
+                    <div class="menu-icon-wrapper-compact secondary-icon">
+                      <v-icon color="white" size="16">mdi-monitor-small</v-icon>
+                    </div>
+                  </template>
+                  <div class="menu-content-compact">
+                    <v-list-item-title class="menu-item-title-compact">{{ __('Connect Pole Display') }}</v-list-item-title>
+                    <v-list-item-subtitle class="menu-item-subtitle-compact">
+                      {{ vfd_state.connected ? __('Connected') : (vfd_state.supported ? __('Choose the serial / USB port') : __('Needs Chrome or Edge')) }}
+                    </v-list-item-subtitle>
+                  </div>
+                </v-list-item>
+                <v-list-item
                   @click="print_last_invoice"
                   v-if="pos_profile.posa_allow_print_last_invoice"
                   class="menu-item-compact secondary-action"
@@ -202,6 +242,29 @@
                   <div class="menu-content-compact">
                     <v-list-item-title class="menu-item-title-compact">{{ __('Print Last Invoice') }}</v-list-item-title>
                     <v-list-item-subtitle class="menu-item-subtitle-compact">{{ __('Reprint previous transaction') }}</v-list-item-subtitle>
+                  </div>
+                </v-list-item>
+                <v-list-item @click="print_last_expense" class="menu-item-compact secondary-action">
+                  <template #prepend>
+                    <div class="menu-icon-wrapper-compact danger-icon">
+                      <v-icon color="white" size="16">mdi-printer-outline</v-icon>
+                    </div>
+                  </template>
+                  <div class="menu-content-compact">
+                    <v-list-item-title class="menu-item-title-compact">{{ __('Print Last Expense') }}</v-list-item-title>
+                    <v-list-item-subtitle class="menu-item-subtitle-compact">{{ __('Reprint your last POS expense') }}</v-list-item-subtitle>
+                  </div>
+                </v-list-item>
+
+                <v-list-item @click="openQzDialog" class="menu-item-compact">
+                  <template #prepend>
+                    <div class="menu-icon-wrapper-compact info-icon">
+                      <v-icon color="white" size="16">mdi-printer-settings</v-icon>
+                    </div>
+                  </template>
+                  <div class="menu-content-compact">
+                    <v-list-item-title class="menu-item-title-compact">{{ __('QZ Tray Printer') }}</v-list-item-title>
+                    <v-list-item-subtitle class="menu-item-subtitle-compact">{{ __('Choose the receipt printer') }}</v-list-item-subtitle>
                   </div>
                 </v-list-item>
 
@@ -419,6 +482,8 @@ import PaidPaymentDialog from './PaidPaymentDialog.vue';
 import AdvancePaymentDialog from './AdvancePaymentDialog.vue';
 import CreatePurchaseDialog from './CreatePurchaseDialog.vue';
 import offlinePos from '../../offline';
+import vfd, { vfdState } from '../../shared/vfd';
+import { openDialog as openQzPrinterDialog } from '../../offline/qz_print';
 
 export default {
   components: {
@@ -457,6 +522,14 @@ export default {
     };
   },
   computed: {
+    vfd_state() {
+      return vfdState;
+    },
+    vfd_chip_title() {
+      if (this.vfd_state.connected) return __('Customer display connected. Click to test.');
+      if (!this.vfd_state.supported) return __('This browser cannot use serial ports. Use Chrome or Edge on the POS computer.');
+      return __('Customer display not connected. Click to choose its port.');
+    },
     appBarColor() {
       const theme = this.$vuetify && this.$vuetify.theme;
       const current = theme && (theme.current && theme.current.value ? theme.current.value : theme.current);
@@ -535,6 +608,9 @@ export default {
         event.preventDefault();
       }
     },
+    openQzDialog() {
+      openQzPrinterDialog();
+    },
     openShortcutsDialog() {
       this.shortcutsDialog = true;
     },
@@ -600,6 +676,54 @@ export default {
       });
     },
 
+// Menu items that open a dialog: close the menu first, then open it.
+open_menu_dialog(ref) {
+  this.menu = false;
+  const dialog = this.$refs[ref];
+  if (dialog && dialog.open) dialog.open(this.pos_profile);
+},
+vfd_chip_click() {
+  if (vfdState.connected) return vfd.test();
+  return this.connect_vfd();
+},
+async connect_vfd() {
+  const ok = await vfd.connect();
+  if (!ok && !vfdState.error) return; // port picker closed
+  evntBus.$emit('show_mesage', {
+    text: ok ? __('Pole display connected') : __('Pole display not connected: {0}', [vfdState.error || '']),
+    color: ok ? 'success' : 'error',
+  });
+},
+// Reprint the last POS Expense Invoice this user submitted (same print
+// format and letter head as when the expense is created).
+print_last_expense() {
+  this.menu = false;
+  frappe.call({
+    method: "posawesome.posawesome.api.posapp.get_last_expense_invoice",
+    callback: (r) => {
+      if (!r.message) {
+        frappe.msgprint(__('No expense invoice found.'));
+        return;
+      }
+      const print_format = this.pos_profile.custom_expense_invoice_print_format;
+      const letter_head = this.pos_profile.letter_head || 0;
+      const url =
+        frappe.urllib.get_base_url() +
+        "/printview?doctype=POS%20Expense%20Invoice&name=" +
+        encodeURIComponent(r.message) +
+        "&trigger_print=1" +
+        (print_format ? "&format=" + encodeURIComponent(print_format) : "") +
+        "&no_letterhead=" +
+        letter_head;
+      const printWindow = window.open(url, "Print");
+      if (!printWindow) {
+        frappe.msgprint(__('Allow pop-ups for this site to print.'));
+        return;
+      }
+      printWindow.addEventListener("load", () => printWindow.print(), true);
+    },
+  });
+},
 print_last_invoice() {
   if (offlinePos.enabled && (offlinePos.useOffline() || String(this.last_invoice || '').startsWith('OFL-'))) {
     offlinePos.listInvoices({ limit: 1 }).then((rows) => {
@@ -897,17 +1021,28 @@ print_last_invoice_old() {
   text-transform: none;
   font-size: 13px;
   letter-spacing: 0.3px;
-  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.2);
+  box-shadow: 0 2px 8px rgba(13, 71, 161, 0.35);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 100%);
+  /* darker blue + white text: the label was blue on blue */
+  background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%) !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  outline: 1px solid #0d47a1;
+  font-weight: 700;
   min-width: 90px;
   height: 36px;
 }
 
+.menu-btn-compact :deep(.v-btn__content),
+.menu-btn-compact :deep(.v-icon) {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
 .menu-btn-compact:hover {
   transform: translateY(-1px) scale(1.02);
-  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
-  background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+  box-shadow: 0 4px 12px rgba(13, 71, 161, 0.45);
+  background: linear-gradient(135deg, #0a3d8f 0%, #1565c0 100%) !important;
 }
 
 /* Compact Menu Card */
@@ -999,7 +1134,8 @@ print_last_invoice_old() {
 .menu-content-compact {
   flex: 1;
   display: flex;
-  flex-direction: row;
+  flex-direction: column; /* subtitle under the title, so titles are not cut off */
+  min-width: 0;
   gap: 2px;
   position: relative;
   z-index: 1;
@@ -1473,10 +1609,8 @@ print_last_invoice_old() {
   color: #e0e0e0 !important;
 }
 
-.theme--dark .drawer-header {
-  .drawer-color {
-    color: #333 !important;
-  }
+.theme--dark .drawer-header .drawer-color {
+  color: #333 !important;
 }
 
 .theme--dark .calc-card {

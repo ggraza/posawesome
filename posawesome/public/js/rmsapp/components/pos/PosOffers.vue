@@ -155,6 +155,13 @@ export default {
         );
         if (pos_offer) {
           pos_offer.items = offer.items;
+          // repeating free product: the free qty follows the cart
+          pos_offer.qualify_qty = offer.qualify_qty;
+          // The cart already has this offer under its own row id (a resumed
+          // sale): use it, so the offer is not taken off and applied again.
+          if (offer.row_id && pos_offer.row_id !== offer.row_id) {
+            pos_offer.row_id = offer.row_id;
+          }
           if (
             pos_offer.offer === 'Grand Total' &&
             !this.discount_percentage_offer_name
@@ -162,9 +169,13 @@ export default {
             pos_offer.offer_applied = !!pos_offer.auto;
           }
           if (
-            offer.apply_on == 'Item Group' &&
-            offer.apply_type == 'Item Group' &&
-            offer.replace_cheapest_item
+            (offer.apply_on == 'Item Group' &&
+              offer.apply_type == 'Item Group' &&
+              offer.replace_cheapest_item) ||
+            // several items listed: the replaced item follows the cart
+            (offer.apply_on == 'Item Code' &&
+              offer.apply_type == 'Item Code' &&
+              offer.replace_item)
           ) {
             pos_offer.give_item = offer.give_item;
             pos_offer.apply_item_code = offer.apply_item_code;

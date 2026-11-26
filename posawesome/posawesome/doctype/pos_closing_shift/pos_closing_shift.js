@@ -290,7 +290,10 @@ function add_to_pos_payments (d, frm) {
 		payment_entry: d.name,
 		posting_date: d.posting_date,
 		paid_amount: d.paid_amount,
-		customer: d.party,
+		payment_type: d.payment_type,
+		party_type: d.party_type,
+		party: d.party,
+		customer: d.party_type === 'Customer' ? d.party : null,
 		mode_of_payment: d.mode_of_payment
 	});
 }
@@ -327,7 +330,7 @@ function add_pos_payment_to_payments (p, frm) {
 		frm.add_child("payment_reconciliation", {
 			mode_of_payment: p.mode_of_payment,
 			opening_amount: 0,
-			expected_amount: p.amount || 0
+			expected_amount: flt(p.paid_amount)
 		});
 	}
 };

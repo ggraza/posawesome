@@ -18,7 +18,9 @@
   "referral_name",
   "referral_code",
   "customer_offer",
-  "primary_offer"
+  "primary_offer",
+  "help_tab",
+  "referral_code_help"
  ],
  "fields": [
   {
@@ -105,11 +107,21 @@
    "fieldtype": "Data",
    "label": "Email ID",
    "options": "Email"
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "referral_code_help",
+   "fieldtype": "HTML",
+   "label": "Referral Code Help"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-07-29 22:28:54.158213",
+ "modified": "2026-11-26 04:00:00.000000",
  "modified_by": "Administrator",
  "module": "POSAwesome",
  "name": "Referral Code",

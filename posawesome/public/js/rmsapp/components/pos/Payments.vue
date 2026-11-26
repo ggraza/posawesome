@@ -99,7 +99,7 @@
         <div v-if="is_cashback">
           <v-row
             class="pyments px-1 py-0"
-            v-for="payment in invoice_doc.payments"
+            v-for="(payment, payment_row) in invoice_doc.payments"
             :key="payment.name || payment.idx || payment.mode_of_payment"
           >
             <v-col cols="6" v-if="!is_mpesa_c2b_payment(payment)">
@@ -116,7 +116,9 @@
                 "
                 :rules="[isNumber]"
                 :prefix="currencySymbol(invoice_doc.currency)"
-                @focus="set_rest_amount(payment.idx)"
+                :data-payment-row="payment_row"
+                @focus="on_payment_focus(payment.idx, $event)"
+                @keydown.enter.prevent="open_print_confirmation($event, payment)"
                 :readonly="invoice_doc.is_return ? true : false"
               ></v-text-field>
             </v-col>
@@ -697,6 +699,176 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <!-- Enter in a payment amount: confirm, then Submit or Submit & Print -->
+      <v-dialog v-model="confirm_print_dialog" max-width="580" persistent>
+        <div @keydown.enter="ignore_enter_repeat">
+          <v-card v-if="invoice_doc" elevation="8" class="confirm-dialog-card">
+            <v-card-title class="confirm-header pa-6">
+              <div class="header-content">
+                <div class="header-icon-wrapper">
+                  <v-icon class="header-icon" size="40">mdi-printer-check</v-icon>
+                </div>
+                <div class="header-text">
+                  <h3 class="header-title">{{ __("Confirm Payment") }}</h3>
+                  <p class="header-subtitle">{{ __("Submit this invoice, or submit and print it?") }}</p>
+                </div>
+              </div>
+            </v-card-title>
+
+            <v-divider class="header-divider"></v-divider>
+
+            <v-card-text class="pa-0 white-background">
+              <div class="pa-6">
+                <div class="total-box mb-4">
+                  <span class="total-label">{{ __("Invoice Total") }}</span>
+                  <span class="total-value">
+                    {{ currencySymbol(invoice_doc.currency) }}
+                    {{ formtCurrency(invoice_doc.rounded_total || invoice_doc.grand_total) }}
+                  </span>
+                </div>
+
+                <div class="form-header mb-2">
+                  <h4 class="text-h6 text-grey-darken-2 mb-0">{{ __("Mode of Payment") }}</h4>
+                </div>
+                <v-table class="white-table rounded-lg" density="compact">
+                  <tbody>
+                    <tr v-for="payment in confirm_payments" :key="payment.idx || payment.mode_of_payment">
+                      <td>
+                        <v-icon size="small" color="primary" class="mr-2">mdi-cash-multiple</v-icon>
+                        {{ __(payment.mode_of_payment) }}
+                      </td>
+                      <td class="text-right font-weight-medium">
+                        {{ currencySymbol(invoice_doc.currency) }} {{ formtCurrency(payment.amount) }}
+                      </td>
+                    </tr>
+                    <tr v-if="flt(invoice_doc.loyalty_amount) > 0">
+                      <td>
+                        <v-icon size="small" color="primary" class="mr-2">mdi-star-circle</v-icon>
+                        {{ __("Loyalty Points") }}
+                      </td>
+                      <td class="text-right font-weight-medium">
+                        {{ currencySymbol(invoice_doc.currency) }} {{ formtCurrency(invoice_doc.loyalty_amount) }}
+                      </td>
+                    </tr>
+                    <tr v-if="flt(redeemed_customer_credit) > 0">
+                      <td>
+                        <v-icon size="small" color="primary" class="mr-2">mdi-account-cash</v-icon>
+                        {{ __("Customer Credit") }}
+                      </td>
+                      <td class="text-right font-weight-medium">
+                        {{ currencySymbol(invoice_doc.currency) }} {{ formtCurrency(redeemed_customer_credit) }}
+                      </td>
+                    </tr>
+                    <tr v-if="!confirm_payments.length && !flt(invoice_doc.loyalty_amount) && !flt(redeemed_customer_credit)">
+                      <td colspan="2" class="text-grey">
+                        {{ is_credit_sale ? __("Credit Sale (no payment)") : __("No payment entered") }}
+                      </td>
+                    </tr>
+                    <tr class="paid-row">
+                      <td>{{ __("Paid Amount") }}</td>
+                      <td class="text-right">
+                        {{ currencySymbol(invoice_doc.currency) }} {{ formtCurrency(total_payments) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </v-table>
+
+                <!-- customer paid more: change -->
+                <template v-if="diff_payment < 0 && !invoice_doc.is_return">
+                  <div class="info-row mt-4">
+                    <span>{{ __("Total Change") }}</span>
+                    <b>{{ currencySymbol(invoice_doc.currency) }} {{ formtCurrency(-diff_payment) }}</b>
+                  </div>
+                  <div class="change-box mt-2">
+                    <div>
+                      <v-icon class="mr-2" color="#f57f17">mdi-hand-coin</v-icon>
+                      <span>{{ __("Paid Change") }}</span>
+                      <div class="box-hint">{{ __("Give to customer") }}</div>
+                    </div>
+                    <span class="box-value">
+                      {{ currencySymbol(invoice_doc.currency) }} {{ formtCurrency(paid_change) }}
+                    </span>
+                  </div>
+                  <div class="credit-box mt-2" v-if="flt(credit_change) != 0">
+                    <div>
+                      <v-icon class="mr-2" color="#1565c0">mdi-wallet-plus</v-icon>
+                      <span>{{ __("Credit Change") }}</span>
+                      <div class="box-hint">{{ __("Kept as customer credit") }}</div>
+                    </div>
+                    <span class="box-value">
+                      {{ currencySymbol(invoice_doc.currency) }} {{ formtCurrency(Math.abs(credit_change)) }}
+                    </span>
+                  </div>
+                </template>
+
+                <!-- return: refund -->
+                <div class="refund-box mt-4" v-if="invoice_doc.is_return">
+                  <div>
+                    <v-icon class="mr-2" color="#6a1b9a">mdi-cash-refund</v-icon>
+                    <span>{{ is_cashback ? __("Refund to Customer") : __("No Refund") }}</span>
+                    <div class="box-hint">
+                      {{ is_cashback ? __("Pay back from the mode of payment above") : __("Kept as customer credit") }}
+                    </div>
+                  </div>
+                  <span class="box-value">
+                    {{ currencySymbol(invoice_doc.currency) }}
+                    {{ formtCurrency(Math.abs(invoice_doc.rounded_total || invoice_doc.grand_total)) }}
+                  </span>
+                </div>
+
+                <!-- customer paid less: outstanding / write-off -->
+                <div class="due-box mt-4" v-if="diff_payment > 0 && !invoice_doc.is_return">
+                  <div>
+                    <v-icon class="mr-2" color="#e65100">mdi-alert-circle-outline</v-icon>
+                    <span>{{ is_write_off_change ? __("Written Off") : __("To Be Paid") }}</span>
+                    <div class="box-hint" v-if="!is_write_off_change">{{ __("Outstanding on this invoice") }}</div>
+                  </div>
+                  <span class="box-value">
+                    {{ currencySymbol(invoice_doc.currency) }} {{ formtCurrency(diff_payment) }}
+                  </span>
+                </div>
+              </div>
+            </v-card-text>
+
+            <v-divider></v-divider>
+            <v-card-actions class="dialog-actions-container">
+              <v-btn
+                ref="confirm_submit_btn"
+                color="primary"
+                variant="flat"
+                class="pos-action-btn submit-only-btn"
+                size="large"
+                @click="confirm_submit"
+              >
+                <v-icon start>mdi-check-circle-outline</v-icon>
+                {{ __("Submit") }}
+              </v-btn>
+              <v-btn
+                ref="confirm_print_btn"
+                color="success"
+                variant="flat"
+                class="pos-action-btn submit-action-btn"
+                size="large"
+                @click="confirm_submit_print"
+              >
+                <v-icon start>mdi-printer-check</v-icon>
+                {{ __("Submit & Print") }}
+              </v-btn>
+              <v-btn
+                color="error"
+                variant="flat"
+                class="pos-action-btn cancel-action-btn"
+                size="large"
+                @click="cancel_confirm"
+              >
+                <v-icon start>mdi-close-circle-outline</v-icon>
+                {{ __("Cancel") }}
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </div>
+      </v-dialog>
     </div>
   </div>
 </template>
@@ -705,9 +877,13 @@
 import { evntBus } from "../../bus";
 import format from "../../format";
 import offlinePos from "../../../offline";
+import vfd from "../../../shared/vfd";
 export default {
   mixins: [format],
   data: () => ({
+    vfd_paying: false, // payment screen open: pole display shows TOTAL / PAID
+    confirm_print_dialog: false, // Enter in a payment amount: Submit / Submit & Print
+    confirm_source_input: null, // the amount field it was opened from (focus returns there)
     loading: false,
     readonly: false,
     pos_profile: "",
@@ -1002,6 +1178,15 @@ export default {
         payment.amount = flt(payment.amount);
         totalPayedAmount += payment.amount;
       });
+      this.vfd_paying = false; // keep PAID / CHANGE up, not TOTAL / PAID
+      if (this.pos_profile && this.pos_profile.posa_enable_vfd && !this.invoice_doc.is_return) {
+        const due = flt(this.invoice_doc.rounded_total || this.invoice_doc.grand_total);
+        vfd.showChange({
+          paid: totalPayedAmount,
+          change: Math.max(0, totalPayedAmount - due),
+          currency: this.currencySymbol ? this.currencySymbol(this.pos_profile.currency) : '',
+        });
+      }
       if (this.invoice_doc.is_return && totalPayedAmount == 0) {
         this.invoice_doc.is_pos = 0;
       }
@@ -1021,23 +1206,32 @@ export default {
       data["is_cashback"] = this.is_cashback;
 
       const vm = this;
-      if (offlinePos.enabled && (offlinePos.useOffline() || this.invoice_doc.__offline)) {
-        return this.submit_invoice_offline(data, print);
+      // The cart is cleared right after this call; the answer may come much
+      // later. Keep this sale's document: never queue the next sale by mistake.
+      const invoice_doc = this.invoice_doc;
+      if (!invoice_doc.posa_offline_id) invoice_doc.posa_offline_id = offlinePos.newSaleId();
+      if (offlinePos.enabled && (offlinePos.useOffline() || invoice_doc.__offline)) {
+        return this.submit_invoice_offline(data, print, invoice_doc);
       }
       frappe.call({
         method: "posawesome.posawesome.api.posapp.submit_invoice",
         args: {
           data: data,
-          invoice: this.invoice_doc,
+          invoice: invoice_doc,
         },
         async: true,
         error: function (xhr) {
-          // connection lost after the draft was saved: keep the sale in the offline queue
+          // Connection lost while submitting. The request may still have reached
+          // the server: the queued copy carries the same sale id and draft name,
+          // so the server posts the sale once whichever arrives first.
           if (offlinePos.enabled && (!xhr || !xhr.status || [502, 503, 504].includes(xhr.status))) {
-            vm.submit_invoice_offline(data, print);
+            vm.submit_invoice_offline(data, print, invoice_doc);
           }
         },
         callback: function (r) {
+          if (r.message && offlinePos.enabled) {
+            offlinePos.forgetSale({ name: r.message.name, saleId: invoice_doc.posa_offline_id }).catch(() => {});
+          }
           if (r.message) {
             if (print) {
             //   if (vm.pos_profile.allow_fbr_on_submit) {
@@ -1051,27 +1245,27 @@ export default {
                 frappe.call({
                   method: "posawesome.events.sales_invoice.submit_to_fbr",
                   args: {
-                    doctype: vm.invoice_doc.doctype,  // Pass doctype
-                    name: vm.invoice_doc.name         // Pass name
+                    doctype: invoice_doc.doctype,  // Pass doctype
+                    name: r.message.name         // Pass name
                     // doc: vm.invoice_doc, // Passing invoice_doc as arg
                   },
                   async: true,
                   callback: function (fbr_res) {
                     console.log("FBR submission result:", fbr_res);
                     // Proceed with printing after FBR submission
-                    vm.load_print_page();
+                    vm.load_print_page(r.message.name);
                   },
                   error: function (err) {
                     console.error("FBR submission failed:", err);
                     // Still allow printing but log error
-                    vm.load_print_page();
+                    vm.load_print_page(r.message.name);
                   }
                 });
               } else {
-                vm.load_print_page();
+                vm.load_print_page(r.message.name);
               }
             }
-            evntBus.$emit("set_last_invoice", vm.invoice_doc.name);
+            evntBus.$emit("set_last_invoice", r.message.name);
             evntBus.$emit("show_mesage", {
               text: `Invoice ${r.message.name} is Submited`,
               color: "success",
@@ -1082,17 +1276,19 @@ export default {
         },
       });
     },
-    async submit_invoice_offline(data, print) {
+    async submit_invoice_offline(data, print, invoice_doc = null) {
       // invoice_doc was computed locally (offline/taxes.js); queue it and print a receipt
       const vm = this;
+      const source = invoice_doc || vm.invoice_doc;
       try {
-        const invoice = { ...vm.invoice_doc };
+        const invoice = { ...source };
         if (!invoice.__offline) {
           // came from the server as a draft: rebuild totals locally to be safe
-          Object.assign(invoice, offlinePos.buildInvoice(invoice), { payments: vm.invoice_doc.payments });
+          // (name + posa_offline_id stay: the server turns that draft into the sale)
+          Object.assign(invoice, offlinePos.buildInvoice(invoice), { payments: source.payments, name: source.name });
         }
-        invoice.is_pos = vm.invoice_doc.is_pos;
-        invoice.due_date = vm.invoice_doc.due_date;
+        invoice.is_pos = source.is_pos;
+        invoice.due_date = source.due_date;
         const record = await offlinePos.submitInvoice(invoice, data, { print });
         evntBus.$emit("set_last_invoice", record.offline_id);
         evntBus.$emit("show_mesage", {
@@ -1131,6 +1327,85 @@ export default {
       });
     },
 
+    // Enter in a payment amount: take the typed amount, then ask Submit or
+    // Submit & Print (the first button, Submit, has the focus).
+    open_print_confirmation(e, payment) {
+      if ((e && e.repeat) || this.vaildatPayment || this.confirm_print_dialog) return;
+      const input = e && e.target;
+      if (payment && input && input.value !== undefined && !this.invoice_doc.is_return) {
+        this.setFormatedCurrency(payment, "amount", null, true, input.value);
+      }
+      this.confirm_source_input = input || null;
+      this.confirm_print_dialog = true;
+      this.focus_confirm_button();
+    },
+    focus_confirm_button(tries = 10) {
+      const btn = this.$refs.confirm_submit_btn;
+      const el = btn && (btn.$el || btn);
+      if (!el || !el.offsetParent) {
+        if (tries > 0) setTimeout(() => this.focus_confirm_button(tries - 1), 50);
+        return;
+      }
+      el.focus();
+    },
+    ignore_enter_repeat(e) {
+      // holding Enter down must not confirm by accident
+      if (e.repeat) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    },
+    confirm_submit() {
+      this.confirm_print_dialog = false;
+      this.submit();
+    },
+    confirm_submit_print() {
+      this.confirm_print_dialog = false;
+      this.submit(undefined, false, true);
+    },
+    cancel_confirm() {
+      this.confirm_print_dialog = false;
+      const input = this.confirm_source_input;
+      this.confirm_source_input = null;
+      // back in the amount the cashier was typing, ready to change it
+      setTimeout(() => {
+        if (input && input.offsetParent) {
+          input.focus();
+          this.select_input(input);
+        }
+      }, 50);
+    },
+    // Focus a payment field: fill the rest of the amount (as before), then
+    // select the whole amount so the cashier can type over it.
+    on_payment_focus(idx, event) {
+      this.set_rest_amount(idx);
+      const input = event && event.target;
+      this.$nextTick(() => setTimeout(() => this.select_input(input), 0));
+    },
+    select_input(input) {
+      if (!input || document.activeElement !== input || typeof input.select !== "function") return;
+      try {
+        input.select();
+      } catch (e) {
+        /* not selectable: ignore */
+      }
+    },
+    // Payment screen opened: focus the default mode of payment, amount selected.
+    focus_default_payment(tries = 10) {
+      const payments = (this.invoice_doc && this.invoice_doc.payments) || [];
+      let row = payments.findIndex((p) => p.default == 1);
+      if (row < 0) row = 0;
+      if (!payments.length || !this.$el || !this.$el.querySelector) return;
+      const input = this.$el.querySelector(`[data-payment-row="${row}"] input`);
+      // the payment panel may still be appearing: try again a little later
+      if (!input || !input.offsetParent) {
+        if (tries > 0) setTimeout(() => this.focus_default_payment(tries - 1), 60);
+        return;
+      }
+      if (input.readOnly) return;
+      input.focus();
+      this.$nextTick(() => setTimeout(() => this.select_input(input), 0));
+    },
     set_rest_amount(idx) {
         const invoice_total = this.invoice_doc.rounded_total || this.invoice_doc.grand_total;
         const loyalty_deduction = this.flt(this.invoice_doc.loyalty_amount) || 0;
@@ -1162,7 +1437,7 @@ export default {
         payment.amount = 0;
       });
     },
-    load_print_page() {
+    load_print_page(name = null) {
       const print_format =
         this.pos_profile.print_format_for_online ||
         this.pos_profile.print_format;
@@ -1170,7 +1445,7 @@ export default {
       const url =
         frappe.urllib.get_base_url() +
         "/printview?doctype=Sales%20Invoice&name=" +
-        this.invoice_doc.name +
+        encodeURIComponent(name || this.invoice_doc.name) +
         "&trigger_print=1" +
         "&format=" +
         print_format +
@@ -1198,20 +1473,28 @@ export default {
       }
     },
     shortPay(e) {
-      if (event.key === 'F6' || (e.key === "x" || e.key === "X") && (e.ctrlKey || e.metaKey)) {
+      if (e.key === 'F6' || (e.key === "x" || e.key === "X") && (e.ctrlKey || e.metaKey)) {
+        if (!this.vfd_paying || !this.invoice_doc) return; // payment screen only
         e.preventDefault();
+        this.confirm_print_dialog = false;
         this.submit();
       }
     },
     shortCancel(e) {
       if (e.key === "Escape" || e.key === "Esc") {
         e.preventDefault();
+        if (this.confirm_print_dialog) {
+          this.cancel_confirm(); // Esc closes the confirmation, stays on payment
+          return;
+        }
         this.back_to_invoice();
       }
     },
     shortSubmit(e) {
-      if (event.key === 'F8' || e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      if (e.key === 'F8' || e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        if (!this.vfd_paying || !this.invoice_doc) return; // payment screen only
         e.preventDefault();
+        this.confirm_print_dialog = false;
         this.submit(undefined, false, true);
       }
     },
@@ -1510,6 +1793,17 @@ export default {
   },
 
   computed: {
+    // Payment lines shown in the confirmation (modes with an amount).
+    confirm_payments() {
+      if (!this.invoice_doc || !this.invoice_doc.payments) return [];
+      return this.invoice_doc.payments.filter((payment) => this.flt(payment.amount) != 0);
+    },
+    // Pole display while paying: total due and the amount typed so far.
+    vfd_payment() {
+      if (!this.vfd_paying || !this.invoice_doc || !this.pos_profile || !this.pos_profile.posa_enable_vfd) return "";
+      if (this.invoice_doc.is_return) return "";
+      return `${this.invoice_doc.rounded_total || this.invoice_doc.grand_total}|${this.total_payments}`;
+    },
     total_payments() {
       let total = this.flt(this.invoice_doc.loyalty_amount); // undefined on locally built invoices
       if (this.invoice_doc && this.invoice_doc.payments) {
@@ -1608,8 +1902,12 @@ export default {
 
   mounted: function () {
     this.$nextTick(function () {
+      evntBus.$on("show_payment", (data) => {
+        this.vfd_paying = data === "true";
+      });
       evntBus.$on("send_invoice_doc_payment", (invoice_doc) => {
         this.invoice_doc = invoice_doc;
+        this.vfd_paying = true;
         const default_payment = this.invoice_doc.payments.find(
           (payment) => payment.default == 1
         );
@@ -1631,6 +1929,8 @@ export default {
         this.loyalty_amount = 0;
         this.get_addresses();
         this.get_sales_person_names();
+        // cursor in the default mode of payment, its amount selected
+        if (!invoice_doc.is_return) this.$nextTick(() => this.focus_default_payment());
       });
       evntBus.$on("register_pos_profile", (data) => {
         this.pos_profile = data.pos_profile;
@@ -1690,6 +1990,17 @@ export default {
   },
 
   watch: {
+  vfd_paying(v) {
+    if (!v) vfd.endPayment();
+  },
+  vfd_payment(v) {
+    if (!v) return;
+    vfd.showTotal(
+      this.invoice_doc.rounded_total || this.invoice_doc.grand_total,
+      this.total_payments,
+      this.currencySymbol ? this.currencySymbol(this.invoice_doc.currency || this.pos_profile.currency) : ""
+    );
+  },
   invoice_doc: {
     deep: true,
     handler(val) {
@@ -1755,3 +2066,235 @@ export default {
   },
 };
 </script>
+<style scoped>
+/* Payment confirmation (Enter in a payment amount) */
+.confirm-header {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-bottom: 1px solid #e0e0e0;
+  padding: 24px !important;
+}
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+}
+.header-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+}
+.header-icon {
+  color: white !important;
+}
+.header-text {
+  flex: 1;
+  white-space: normal;
+}
+.header-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 4px 0;
+  line-height: 1.2;
+}
+.header-subtitle {
+  font-size: 0.95rem;
+  color: #666;
+  margin: 0;
+  font-weight: 400;
+  word-break: normal;
+}
+.header-divider {
+  border-color: #e0e0e0;
+}
+.white-background {
+  background-color: #ffffff;
+}
+.form-header {
+  padding: 0 4px;
+}
+.total-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.25);
+}
+.total-label {
+  font-size: 1rem;
+  font-weight: 500;
+}
+.total-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.white-table {
+  background-color: white;
+  border: 1px solid #e0e0e0;
+}
+.white-table td {
+  padding: 8px 12px !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+  font-size: 0.95rem !important;
+}
+.paid-row td {
+  background: #f5f5f5;
+  font-weight: 700;
+  color: #424242;
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+  font-size: 1rem;
+  color: #424242;
+}
+.change-box,
+.credit-box,
+.due-box,
+.refund-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+.change-box {
+  background: #fff9c4;
+  border: 2px solid #fbc02d;
+  color: #5d4037;
+}
+.change-box .box-value {
+  font-size: 1.6rem;
+}
+.credit-box {
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+  color: #0d47a1;
+}
+.refund-box {
+  background: #f3e5f5;
+  border: 2px solid #ab47bc;
+  color: #4a148c;
+}
+.due-box {
+  background: #fff3e0;
+  border: 2px solid #fb8c00;
+  color: #bf360c;
+}
+.box-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.box-hint {
+  font-size: 0.8rem;
+  font-weight: 400;
+  opacity: 0.8;
+  margin-left: 32px;
+}
+.dialog-actions-container {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-top: 1px solid #e0e0e0;
+  padding: 16px 24px;
+  gap: 12px;
+}
+.pos-action-btn {
+  border-radius: 12px;
+  text-transform: none;
+  font-weight: 600;
+  padding: 0 12px;
+  flex: 1 1 0; /* three buttons share the row: none is cut off */
+  min-width: 0;
+  letter-spacing: normal;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  color: white !important;
+}
+.pos-action-btn .v-icon,
+.pos-action-btn span {
+  color: white !important;
+}
+.submit-only-btn {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%) !important;
+}
+.submit-action-btn {
+  background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%) !important;
+}
+.cancel-action-btn {
+  background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%) !important;
+}
+/* the focused button (Enter presses it) stands out */
+.pos-action-btn:focus-visible,
+.pos-action-btn:focus {
+  outline: 3px solid #ffb300;
+  outline-offset: 2px;
+  transform: translateY(-2px);
+}
+.submit-only-btn:hover {
+  box-shadow: 0 6px 20px rgba(25, 118, 210, 0.4);
+}
+.submit-action-btn:hover {
+  box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
+}
+.cancel-action-btn:hover {
+  box-shadow: 0 6px 20px rgba(211, 47, 47, 0.4);
+}
+@media (max-width: 768px) {
+  .dialog-actions-container {
+    flex-direction: column;
+  }
+  .pos-action-btn {
+    width: 100%;
+  }
+  .confirm-header {
+    padding: 16px !important;
+  }
+  .header-icon-wrapper {
+    width: 48px;
+    height: 48px;
+  }
+  .header-title {
+    font-size: 1.25rem;
+  }
+  .total-value,
+  .change-box .box-value {
+    font-size: 1.3rem;
+  }
+}
+/* dark theme (Vuetify 3 class; v14 used .theme--dark) */
+.v-theme--dark .confirm-header,
+.v-theme--dark .dialog-actions-container {
+  background: linear-gradient(135deg, #1e1e1e 0%, #121212 100%) !important;
+  border-color: #333 !important;
+}
+.v-theme--dark .white-background,
+.v-theme--dark .white-table {
+  background-color: #1e1e1e !important;
+}
+.v-theme--dark .white-table td {
+  border-bottom: 1px solid #333 !important;
+}
+.v-theme--dark .paid-row td {
+  background: #333;
+  color: #e0e0e0;
+}
+.v-theme--dark .header-title,
+.v-theme--dark .info-row {
+  color: #e0e0e0 !important;
+}
+.v-theme--dark .header-subtitle {
+  color: #aaa !important;
+}
+</style>

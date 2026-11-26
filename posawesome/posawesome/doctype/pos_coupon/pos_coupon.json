@@ -25,9 +25,11 @@
   "valid_upto",
   "maximum_use",
   "used",
-  "one\u0640use",
+  "oneـuse",
   "column_break_11",
-  "description"
+  "description",
+  "help_tab",
+  "pos_coupon_help"
  ],
  "fields": [
   {
@@ -136,7 +138,7 @@
   },
   {
    "default": "0",
-   "fieldname": "one\u0640use",
+   "fieldname": "oneـuse",
    "fieldtype": "Check",
    "label": "Only One Use Per Customer"
   },
@@ -172,11 +174,21 @@
    "label": "Referral Code",
    "options": "Referral Code",
    "read_only": 1
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "pos_coupon_help",
+   "fieldtype": "HTML",
+   "label": "POS Coupon Help"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-07-30 00:17:17.711972",
+ "modified": "2026-11-26 04:00:00.000000",
  "modified_by": "Administrator",
  "module": "POSAwesome",
  "name": "POS Coupon",

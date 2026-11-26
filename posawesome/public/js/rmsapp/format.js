@@ -84,8 +84,12 @@ export default {
             return get_currency_symbol(currency);
         },
         isNumber (value) {
+            // 1.000,00 (comma decimals) as before, and also 1,000.00 / 1000.00
+            // (the system number format here); those showed as invalid (red).
             const pattern = /^-?(\d+|\d{1,3}(\.\d{3})*)(,\d+)?$/;
-            return pattern.test(value) || "invalid number";
+            const dot_decimal = /^-?(\d+|\d{1,3}(,\d{3})*)(\.\d+)?$/;
+            const v = String(value == null ? "" : value).trim();
+            return pattern.test(v) || dot_decimal.test(v) || "invalid number";
 
         }
     },

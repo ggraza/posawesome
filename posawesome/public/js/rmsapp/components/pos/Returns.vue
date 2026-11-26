@@ -83,6 +83,16 @@
             <v-icon start>mdi-backup-restore</v-icon>
             {{ __('Return Without Invoice') }}
           </v-btn>
+          <v-btn
+            v-if="exchange_enabled"
+            color="deep-purple"
+            variant="flat"
+            class="ml-2"
+            @click="open_exchange"
+          >
+            <v-icon start>mdi-swap-horizontal-bold</v-icon>
+            {{ __('Exchange / Replace Items') }}
+          </v-btn>
           <v-spacer></v-spacer>
           <v-btn color="error mx-2" @click="close_dialog">Close</v-btn>
           <v-btn
@@ -118,6 +128,8 @@ export default {
     showItemSelection: false,
     selectedInvoice: null,
     invoiceItems: [],
+    pos_profile: null,
+    pos_opening_shift: null,
     headers: [
       {
         title: __('Customer'),
@@ -182,7 +194,21 @@ export default {
     ],
   }),
   watch: {},
+  computed: {
+    // shown only when the POS Profile allows exchange or replacement
+    exchange_enabled() {
+      const p = this.pos_profile || {};
+      return !!(Number(p.posa_enable_item_exchange) || Number(p.posa_enable_item_replacement));
+    },
+  },
   methods: {
+    open_exchange() {
+      this.close_dialog();
+      evntBus.$emit('open_item_exchange', {
+        pos_profile: this.pos_profile,
+        pos_opening_shift: this.pos_opening_shift,
+      });
+    },
 return_without_invoice() {
   // Blank return doc, no original invoice. Invoice.vue fills in the customer.
   const invoice_doc = {
@@ -334,6 +360,10 @@ onRowClicks(item) {
     },
   },
   created: function () {
+    evntBus.$on('register_pos_profile', (data) => {
+      this.pos_profile = data.pos_profile;
+      this.pos_opening_shift = data.pos_opening_shift;
+    });
     evntBus.$on('open_returns', (data) => {
       this.invoicesDialog = true;
       this.company = data;

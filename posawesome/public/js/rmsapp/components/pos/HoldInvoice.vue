@@ -49,6 +49,7 @@
 
 <script>
 import { evntBus } from "../../bus";
+import offlinePos from "../../../offline";
 export default {
   data: () => ({
     singleSelect: true,
@@ -85,7 +86,7 @@ export default {
   methods: {
     focus_input() {
       this.invoice_name = null;
-      this.$refs.invoice_name.focus();
+      this.$refs.invoice_name?.focus?.();
       console.log('Hold Invoice Focus');
     },
     back_to_invoice() {
@@ -96,7 +97,7 @@ export default {
     open_invoice(invoice) {
       evntBus.$emit("load_invoice", invoice);
       this.invoice_name = null;
-      this.$refs.invoice_name.focus();
+      this.$refs.invoice_name?.focus?.();
     },
     submit_dialog() {
       if (this.selected.length > 0) {
@@ -104,24 +105,21 @@ export default {
       }
     },
     get_draft_invoices() {
-      const vm = this;
-      frappe.call({
-        method: 'posawesome.posawesome.api.posapp.get_draft_invoices',
-        args: {
-          pos_opening_shift: this.pos_opening_shift.name,
-        },
-        async: false,
-        callback: function (r) {
-          if (r.message) {
-            evntBus.$emit('open_hold', r.message);
-          }
-        },
-      });
+      if (!this.pos_opening_shift || !this.pos_opening_shift.name) return;
+      // server drafts, or the copy kept on this terminal while offline,
+      // with the carts held offline first
+      offlinePos
+        .loadDrafts(this.pos_opening_shift.name)
+        .then((rows) => evntBus.$emit('open_hold', rows))
+        .catch((e) => {
+          console.error(e);
+          evntBus.$emit('show_mesage', { text: (e && e.message) || String(e), color: 'error' });
+        });
     },
     shortcuts(e) {
       if ((e.key === 'h' || e.key === 'H') && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        this.$refs.invoice_name.focus();
+        this.$refs.invoice_name?.focus?.();
       }
     },
   },
