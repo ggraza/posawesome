@@ -1,0 +1,55 @@
+{
+ "app": "posawesome",
+ "creation": "2026-11-26 16:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Dock",
+ "idx": 0,
+ "items": [
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "posa-register-soft",
+   "link_to": "POS G2Virtu",
+   "link_type": "Sidebar",
+   "title": "POS G2Virtu"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "posa-terminal-soft",
+   "link_type": "URL",
+   "title": "POS Terminal",
+   "url": "/desk/posapp"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "posa-dining-soft",
+   "link_type": "URL",
+   "title": "RMS Terminal",
+   "url": "/desk/rmsapp"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "posa-kitchen-soft",
+   "link_type": "URL",
+   "title": "Kitchen Display",
+   "url": "/desk/kds"
+  },
+  {
+   "added": 0,
+   "hidden": 1,
+   "icon": "posa-kiosk-soft",
+   "link_type": "URL",
+   "title": "Price Checker",
+   "url": "/desk/price_kiosk"
+  }
+ ],
+ "modified": "2026-11-26 16:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "posawesome",
+ "owner": "Administrator",
+ "standard": 1,
+ "user": ""
+}

@@ -196,6 +196,8 @@ frappe.pages['kds'].on_page_load = function (wrapper) {
 				<input type="text" id="search-ticket" placeholder="Search Ticket or Invoice..." />
 			</div>
 			<button id="filter-refresh" class="btn btn-success">Refresh</button>
+			<button id="kds-recall" class="btn btn-secondary">${__("Recall")}</button>
+			<button id="kds-86" class="btn btn-secondary">86</button>
 		</div>
 
 		<div id="kds-board">
@@ -222,6 +224,9 @@ loadKDSLogo();
 	frappe.realtime.on("new_kitchen_ticket", loadKitchenTickets);
 
 	$('#filter-refresh').on('click', () => loadKitchenTickets());
+	$('#kds-recall').on('click', showRecall);
+	$('#kds-86').on('click', show86);
+	frappe.realtime.on("posa_86_changed", loadKitchenTickets);
 	$('#filter-company, #filter-unit, #filter-status').on('change', () => loadKitchenTickets());
 	$('#search-ticket').on('input', filterTicketsBySearch);
 };
@@ -272,10 +277,16 @@ function loadKitchenTickets() {
 // Render Tickets
 function renderTickets(tickets) {
 	$("#new-tickets, #preparing-tickets, #ready-tickets").empty();
+	kdsTimers.forEach(clearInterval);
+	kdsTimers = [];
 
 	tickets.forEach(t => {
 		let actions = '';
-		if (t.status === "New") {
+		const isVoid = t.ticket_type === "Void";
+		if (isVoid) {
+			// the kitchen confirms it has seen the void; the ticket then leaves the screen
+			actions = `<button class="btn btn-danger served">${__("Void Seen")}</button>`;
+		} else if (t.status === "New") {
 			actions = `
 				<button class="btn btn-warning preparing">Preparing</button>
 				<button class="btn btn-success ready">Ready</button>
@@ -288,16 +299,52 @@ function renderTickets(tickets) {
 			actions = `<button class="btn btn-secondary served">Served</button>`;
 		}
 
+		const esc = (v) => frappe.utils.escape_html(v == null ? "" : String(v));
+		const fd = t.fd || {};
+		const bump = !!fd.item_bump && !isVoid;
+		// fine dining: rows grouped by course, with seat and modifiers
+		const fdRows = (items) => {
+			let html = "";
+			let course = null;
+			const withCourse = items.some((i) => i.posa_course);
+			// courses in the order they first appear on the ticket (the order's course order)
+			const order = [];
+			items.forEach((i) => {
+				if (!order.includes(i.posa_course || "")) order.push(i.posa_course || "");
+			});
+			items
+				.slice()
+				.sort((a, b) => (withCourse ? order.indexOf(a.posa_course || "") - order.indexOf(b.posa_course || "") : 0))
+				.forEach((i) => {
+					if (withCourse && (i.posa_course || "") !== course) {
+						course = i.posa_course || "";
+						html += `<tr class="kds-course-row"><td colspan="3">${esc(course || __("No course"))}</td></tr>`;
+					}
+					const done = i.item_status === "Ready" || i.item_status === "Served";
+					html += `
+							<tr class="${bump ? "kds-bump" : ""}${done ? " kds-item-done" : ""}" data-row="${esc(i.name || "")}">
+								<td>${done ? "&#10003; " : ""}${i.posa_seat ? `<span class="kds-seat">S${esc(i.posa_seat)}</span> ` : ""}${esc(i.item_name)}${
+									i.posa_modifiers ? `<div class="kds-mods">${esc(i.posa_modifiers)}</div>` : ""
+								}${i.posa_allergen_alert ? `<div class="kds-allergy-item">&#9888; ${__("ALLERGY")}: ${esc(i.posa_allergen_alert)}</div>` : ""}</td>
+								<td><b>${isVoid ? "-" : "x"}${esc(i.qty)}</b></td>
+								<td>${esc(i.posa_notes)}${fd.eighty_six && i.item_code && !isVoid ? ` <button class="btn btn-xs kds-86-btn" data-item="${esc(i.item_code)}" title="${__("Mark unavailable (86)")}">86</button>` : ""}</td>
+							</tr>`;
+				});
+			return html;
+		};
+
 		const card = $(`
-			<div class="ticket-card ticket-${t.status.toLowerCase()}" data-ticket-name="${t.name}">
+			<div class="ticket-card ticket-${t.status.toLowerCase()}${isVoid ? " ticket-void" : ""}" data-ticket-name="${t.name}">
 				<div class="ticket-header">
-					<h3>${t.kitchen_production_unit || "Unknown Unit"}</h3>
+					<h3>${isVoid ? `<span class="kds-void-tag">${__("VOID")}</span> ` : ""}${esc(t.kitchen_production_unit || "Unknown Unit")}</h3>
 					<span class="ticket-timer" id="timer-${t.name.replace(/\W/g, '')}">--:--</span>
 				</div>
+				${t.allergy_note ? `<div class="kds-allergy">&#9888; ${__("ALLERGY")}: ${esc(t.allergy_note)}</div>` : ""}
 				<div class="ticket-details">
+					${t.service_table ? `<p class="kds-table"><b>${__("Table")}:</b> ${esc(t.service_table)}${t.covers ? ` &middot; ${esc(t.covers)} ${__("guests")}` : ""}</p>` : ""}
 					<p><b>Ticket:</b> ${t.name}</p>
 					<p><b>Invoice:</b> ${t.sales_invoice}</p>
-					<p><b>Status:</b> <span class="text-blue-700">${t.status}</span></p>
+					<p><b>Status:</b> <span class="text-blue-700">${isVoid ? __("VOID - stop or remove these items") : t.status}</span></p>
 					<p><b>Created:</b> ${frappe.datetime.str_to_user(t.creation)}</p>
 				</div>
 
@@ -306,12 +353,7 @@ function renderTickets(tickets) {
 						<tr><th>Item</th><th>Qty</th><th>Notes</th></tr>
 					</thead>
 					<tbody>
-						${(t.items || []).map(i => `
-							<tr>
-								<td>${i.item_name}</td>
-								<td><b>x${i.qty}</b></td>
-								<td>${i.posa_notes || ""}</td>
-							</tr>`).join('')}
+						${fdRows(t.items || [])}
 					</tbody>
 				</table>
 
@@ -319,11 +361,36 @@ function renderTickets(tickets) {
 			</div>
 		`);
 
-		if (t.status === "New") $("#new-tickets").append(card);
+		if (isVoid) $("#new-tickets").prepend(card);
+		else if (t.status === "New") $("#new-tickets").append(card);
 		else if (t.status === "Preparing") $("#preparing-tickets").append(card);
 		else if (t.status === "Ready") $("#ready-tickets").append(card);
 
-		startTimer(`timer-${t.name.replace(/\W/g, '')}`, t.creation);
+		startTimer(`timer-${t.name.replace(/\W/g, '')}`, t.creation, isVoid ? 0 : fd.prep_minutes ? t.target_minutes || fd.prep_minutes : 0, card);
+
+		if (bump) {
+			card.find("tr.kds-bump").on("click", function (e) {
+				if ($(e.target).closest(".kds-86-btn").length) return;
+				const row = $(this).data("row");
+				if (!row) return;
+				frappe.call({
+					method: "posawesome.posawesome.api.fine_dining_kitchen.bump_item",
+					args: { ticket: t.name, row },
+					callback: () => loadKitchenTickets(),
+				});
+			});
+		}
+		card.find(".kds-86-btn").on("click", function (e) {
+			e.stopPropagation();
+			const item = $(this).data("item");
+			frappe.confirm(__("Mark {0} as not available today (86)?", [item]), () =>
+				frappe.call({
+					method: "posawesome.posawesome.api.fine_dining_kitchen.set_86",
+					args: { item_code: item, unavailable: 1, pos_profile: t.pos_profile },
+					callback: () => frappe.show_alert({ message: __("{0} is 86", [item]), indicator: "red" }),
+				})
+			);
+		});
 
 		card.find('.preparing').on('click', () => updateStatus(t.name, 'Preparing'));
 		card.find('.ready').on('click', () => updateStatus(t.name, 'Ready'));
@@ -341,17 +408,77 @@ function filterTicketsBySearch() {
 	renderTickets(filtered);
 }
 
-// Timer Function
-function startTimer(id, created_at) {
+// Timer Function. With a target (fine dining Kitchen Target Minutes) the card
+// turns amber at 75% of it and red past it.
+let kdsTimers = [];
+function startTimer(id, created_at, target, card) {
 	const el = document.getElementById(id);
 	if (!el) return;
 	const start = new Date(created_at).getTime();
-	setInterval(() => {
+	const tick = () => {
 		const diff = Date.now() - start;
 		const mins = Math.floor(diff / 60000);
 		const secs = Math.floor((diff % 60000) / 1000);
 		el.textContent = `${mins}m ${secs.toString().padStart(2, '0')}s`;
-	}, 1000);
+		if (target && card) {
+			const late = diff >= target * 60000;
+			const soon = !late && diff >= target * 0.75 * 60000;
+			card.toggleClass("kds-late", late).toggleClass("kds-soon", soon);
+		}
+	};
+	tick();
+	kdsTimers.push(setInterval(tick, 1000));
+}
+
+// Recall a finished ticket (fine dining)
+function showRecall() {
+	frappe.call({
+		method: "posawesome.posawesome.api.fine_dining_kitchen.recent_done",
+		args: { unit: $('#filter-unit').val() || null },
+		callback: (r) => {
+			const rows = r.message || [];
+			const d = new frappe.ui.Dialog({ title: __("Recall a ticket"), fields: [{ fieldtype: "HTML", fieldname: "list" }] });
+			const html = rows.length
+				? rows.map((t) => `<div class="d-flex justify-content-between align-items-center border-bottom py-2">
+					<span><b>${frappe.utils.escape_html(t.name)}</b> &middot; ${frappe.utils.escape_html(t.service_table || t.sales_invoice || "")} &middot; ${frappe.utils.escape_html(t.status)}</span>
+					<button class="btn btn-sm btn-warning kds-recall-one" data-name="${frappe.utils.escape_html(t.name)}">${__("Recall")}</button></div>`).join("")
+				: `<div class="text-muted">${__("No finished tickets")}</div>`;
+			d.fields_dict.list.$wrapper.html(html);
+			d.fields_dict.list.$wrapper.find(".kds-recall-one").on("click", function () {
+				frappe.call({
+					method: "posawesome.posawesome.api.fine_dining_kitchen.recall",
+					args: { ticket: $(this).data("name") },
+					callback: () => { d.hide(); loadKitchenTickets(); },
+				});
+			});
+			d.show();
+		},
+	});
+}
+
+// The 86 list: dishes not available today (fine dining)
+function show86() {
+	frappe.call({
+		method: "posawesome.posawesome.api.fine_dining_kitchen.get_86",
+		callback: (r) => {
+			const rows = r.message || [];
+			const d = new frappe.ui.Dialog({ title: __("86 - not available today"), fields: [{ fieldtype: "HTML", fieldname: "list" }] });
+			const html = rows.length
+				? rows.map((i) => `<div class="d-flex justify-content-between align-items-center border-bottom py-2">
+					<span>${frappe.utils.escape_html(i.item_name || i.item_code)}</span>
+					<button class="btn btn-sm btn-success kds-86-off" data-item="${frappe.utils.escape_html(i.item_code)}">${__("Back On")}</button></div>`).join("")
+				: `<div class="text-muted">${__("Everything is available.")}</div>`;
+			d.fields_dict.list.$wrapper.html(html);
+			d.fields_dict.list.$wrapper.find(".kds-86-off").on("click", function () {
+				frappe.call({
+					method: "posawesome.posawesome.api.fine_dining_kitchen.set_86",
+					args: { item_code: $(this).data("item"), unavailable: 0 },
+					callback: () => { d.hide(); },
+				});
+			});
+			d.show();
+		},
+	});
 }
 
 // Update Status

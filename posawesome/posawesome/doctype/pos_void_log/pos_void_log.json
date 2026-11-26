@@ -1,0 +1,236 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 16:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "void_type",
+  "status",
+  "sales_invoice",
+  "sale_id",
+  "pos_profile",
+  "service_table",
+  "column_break_v1",
+  "reason",
+  "remarks",
+  "requested_by",
+  "approved_by",
+  "approved_on",
+  "section_item",
+  "item_code",
+  "item_name",
+  "row_id",
+  "column_break_v2",
+  "qty",
+  "rate",
+  "amount",
+  "sent_to_kitchen",
+  "kitchen_ticket",
+  "help_tab",
+  "pos_void_log_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "void_type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Void\nComp",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Approved\nApplied\nOffline",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1,
+   "description": "Approved: waiting for the order to be saved. Applied: done. Offline: made on a terminal without connection, not approved."
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "sale_id",
+   "fieldtype": "Data",
+   "label": "Sale ID",
+   "read_only": 1,
+   "search_index": 1,
+   "description": "The POS sale this belongs to (the invoice's posa_offline_id)"
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "service_table",
+   "fieldtype": "Link",
+   "label": "Table",
+   "options": "Service Table",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_v1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Link",
+   "label": "Reason",
+   "options": "POS Void Reason",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks",
+   "read_only": 1
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "label": "Requested By",
+   "options": "User",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_item",
+   "fieldtype": "Section Break",
+   "label": "Item"
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "row_id",
+   "fieldtype": "Data",
+   "label": "Order Row",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_v2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "label": "Qty",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "label": "Rate",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "sent_to_kitchen",
+   "fieldtype": "Check",
+   "label": "Was Sent To Kitchen",
+   "read_only": 1
+  },
+  {
+   "fieldname": "kitchen_ticket",
+   "fieldtype": "Link",
+   "label": "Void Kitchen Ticket",
+   "options": "Kitchen Ticket",
+   "read_only": 1
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "pos_void_log_help",
+   "fieldtype": "HTML",
+   "label": "POS Void Log Help"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-26 04:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Void Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "format:VOID-{YY}{MM}-{#####}",
+ "naming_rule": "Expression",
+ "title_field": "item_name",
+ "in_create": 1
+}

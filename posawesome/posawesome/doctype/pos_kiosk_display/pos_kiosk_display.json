@@ -1,0 +1,570 @@
+{
+ "actions": [],
+ "creation": "2026-11-25 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "display_name",
+  "enabled",
+  "priority",
+  "column_break_main",
+  "company",
+  "valid_from",
+  "valid_upto",
+  "section_applies",
+  "apply_to_all_profiles",
+  "pos_profiles",
+  "section_notes",
+  "notes",
+  "tab_layout",
+  "orientation",
+  "show_top_bar",
+  "logo",
+  "tagline",
+  "show_clock",
+  "column_break_layout",
+  "show_ticker",
+  "show_search_box",
+  "section_centre",
+  "show_centre_media",
+  "show_scan_hint",
+  "column_break_centre",
+  "idle_title",
+  "idle_subtitle",
+  "idle_hint",
+  "section_sidebars",
+  "show_left_sidebar",
+  "left_sidebar_content",
+  "left_sidebar_width",
+  "left_min_screen_width",
+  "column_break_sidebars",
+  "show_right_sidebar",
+  "right_sidebar_content",
+  "right_sidebar_width",
+  "after_scan_sidebars",
+  "tab_timing",
+  "slide_seconds",
+  "result_seconds",
+  "not_found_seconds",
+  "column_break_timing",
+  "offer_rotate_seconds",
+  "ticker_speed",
+  "refresh_minutes",
+  "section_video",
+  "play_video_sound",
+  "column_break_video",
+  "max_video_seconds",
+  "tab_theme",
+  "background_color",
+  "background_image",
+  "text_color",
+  "heading_color",
+  "column_break_theme",
+  "price_color",
+  "accent_color",
+  "offer_color",
+  "ticker_background",
+  "ticker_text_color",
+  "font_scale",
+  "tab_slides",
+  "slides",
+  "tab_ticker",
+  "ticker_separator",
+  "ticker_items",
+  "tab_offline",
+  "cache_media",
+  "max_cache_mb",
+  "help_tab",
+  "pos_kiosk_display_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "display_name",
+   "fieldtype": "Data",
+   "label": "Display Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Int",
+   "label": "Priority",
+   "default": "0",
+   "in_list_view": 1,
+   "description": "When several enabled displays match a kiosk at the same time, the highest priority one runs"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "in_standard_filter": 1,
+   "description": "Optional: only POS Profiles of this company"
+  },
+  {
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "label": "Valid From"
+  },
+  {
+   "fieldname": "valid_upto",
+   "fieldtype": "Date",
+   "label": "Valid Upto"
+  },
+  {
+   "fieldname": "section_applies",
+   "fieldtype": "Section Break",
+   "label": "Applies To"
+  },
+  {
+   "fieldname": "apply_to_all_profiles",
+   "fieldtype": "Check",
+   "label": "All POS Profiles"
+  },
+  {
+   "fieldname": "pos_profiles",
+   "fieldtype": "Table",
+   "label": "POS Profiles",
+   "options": "POS Kiosk Display Profile",
+   "depends_on": "eval:!doc.apply_to_all_profiles",
+   "mandatory_depends_on": "eval:!doc.apply_to_all_profiles",
+   "description": "Price checker screens of these POS Profiles show this display"
+  },
+  {
+   "fieldname": "section_notes",
+   "fieldtype": "Section Break",
+   "label": "Notes",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "tab_layout",
+   "fieldtype": "Tab Break",
+   "label": "Layout"
+  },
+  {
+   "fieldname": "orientation",
+   "fieldtype": "Select",
+   "label": "Screen Orientation",
+   "options": "Auto\nLandscape\nPortrait",
+   "default": "Auto",
+   "description": "Auto follows the screen. Portrait stacks the areas; the left sidebar is not shown."
+  },
+  {
+   "fieldname": "show_top_bar",
+   "fieldtype": "Check",
+   "label": "Show Top Bar",
+   "default": "1"
+  },
+  {
+   "fieldname": "logo",
+   "fieldtype": "Attach Image",
+   "label": "Logo",
+   "depends_on": "show_top_bar",
+   "description": "Public file; shown left of the store name"
+  },
+  {
+   "fieldname": "tagline",
+   "fieldtype": "Data",
+   "label": "Tagline",
+   "default": "Scan & check the price",
+   "depends_on": "show_top_bar"
+  },
+  {
+   "fieldname": "show_clock",
+   "fieldtype": "Check",
+   "label": "Show Date and Time",
+   "default": "1",
+   "depends_on": "show_top_bar"
+  },
+  {
+   "fieldname": "column_break_layout",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "show_ticker",
+   "fieldtype": "Check",
+   "label": "Show Ticker",
+   "default": "1",
+   "description": "Scrolling text at the bottom (Ticker tab)"
+  },
+  {
+   "fieldname": "show_search_box",
+   "fieldtype": "Check",
+   "label": "Show Search Box",
+   "default": "1",
+   "description": "Off: the box is hidden; barcode scanners still work"
+  },
+  {
+   "fieldname": "section_centre",
+   "fieldtype": "Section Break",
+   "label": "Centre"
+  },
+  {
+   "fieldname": "show_centre_media",
+   "fieldtype": "Check",
+   "label": "Slideshow / Video While Idle",
+   "default": "1",
+   "description": "Centre slides play while nobody scans. A scan always takes over the centre."
+  },
+  {
+   "fieldname": "show_scan_hint",
+   "fieldtype": "Check",
+   "label": "Show Scan Hint Over Slides",
+   "default": "1"
+  },
+  {
+   "fieldname": "column_break_centre",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "idle_title",
+   "fieldtype": "Data",
+   "label": "Idle Title",
+   "default": "Scan a product to see its price"
+  },
+  {
+   "fieldname": "idle_subtitle",
+   "fieldtype": "Data",
+   "label": "Idle Second Line",
+   "default": "قیمت جاننے کے لیے پروڈکٹ اسکین کریں"
+  },
+  {
+   "fieldname": "idle_hint",
+   "fieldtype": "Data",
+   "label": "Idle Hint",
+   "default": "Hold the barcode in front of the scanner"
+  },
+  {
+   "fieldname": "section_sidebars",
+   "fieldtype": "Section Break",
+   "label": "Sidebars"
+  },
+  {
+   "fieldname": "show_left_sidebar",
+   "fieldtype": "Check",
+   "label": "Show Left Sidebar"
+  },
+  {
+   "fieldname": "left_sidebar_content",
+   "fieldtype": "Select",
+   "label": "Left Sidebar Shows",
+   "options": "Featured Items\nSlides",
+   "default": "Featured Items",
+   "depends_on": "show_left_sidebar",
+   "description": "Featured Items: Item slides of the left sidebar, or the items of running offers"
+  },
+  {
+   "fieldname": "left_sidebar_width",
+   "fieldtype": "Int",
+   "label": "Left Width (%)",
+   "default": "19",
+   "depends_on": "show_left_sidebar"
+  },
+  {
+   "fieldname": "left_min_screen_width",
+   "fieldtype": "Int",
+   "label": "Hide Left Below Screen Width (px)",
+   "default": "1600",
+   "depends_on": "show_left_sidebar"
+  },
+  {
+   "fieldname": "column_break_sidebars",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "show_right_sidebar",
+   "fieldtype": "Check",
+   "label": "Show Right Sidebar",
+   "default": "1"
+  },
+  {
+   "fieldname": "right_sidebar_content",
+   "fieldtype": "Select",
+   "label": "Right Sidebar Shows",
+   "options": "Offers\nSlides",
+   "default": "Offers",
+   "depends_on": "show_right_sidebar",
+   "description": "Offers: running POS Offers of this POS Profile, live"
+  },
+  {
+   "fieldname": "right_sidebar_width",
+   "fieldtype": "Int",
+   "label": "Right Width (%)",
+   "default": "25",
+   "depends_on": "show_right_sidebar"
+  },
+  {
+   "fieldname": "after_scan_sidebars",
+   "fieldtype": "Check",
+   "label": "Sidebars Follow The Scan",
+   "default": "1",
+   "description": "After a scan: the item's offers first (right), other items of its group (left)"
+  },
+  {
+   "fieldname": "tab_timing",
+   "fieldtype": "Tab Break",
+   "label": "Timing"
+  },
+  {
+   "fieldname": "slide_seconds",
+   "fieldtype": "Int",
+   "label": "Seconds Per Slide",
+   "default": "8"
+  },
+  {
+   "fieldname": "result_seconds",
+   "fieldtype": "Int",
+   "label": "Show Price For (Seconds)",
+   "default": "20"
+  },
+  {
+   "fieldname": "not_found_seconds",
+   "fieldtype": "Int",
+   "label": "Show Not Found For (Seconds)",
+   "default": "8"
+  },
+  {
+   "fieldname": "column_break_timing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "offer_rotate_seconds",
+   "fieldtype": "Int",
+   "label": "Offers Scroll Every (Seconds)",
+   "default": "6"
+  },
+  {
+   "fieldname": "ticker_speed",
+   "fieldtype": "Int",
+   "label": "Ticker Speed (Pixels / Second)",
+   "default": "90"
+  },
+  {
+   "fieldname": "refresh_minutes",
+   "fieldtype": "Int",
+   "label": "Check For Changes Every (Minutes)",
+   "default": "10",
+   "description": "Changes also reach the kiosk within seconds while it is online"
+  },
+  {
+   "fieldname": "section_video",
+   "fieldtype": "Section Break",
+   "label": "Video"
+  },
+  {
+   "fieldname": "play_video_sound",
+   "fieldtype": "Check",
+   "label": "Play Video Sound",
+   "description": "Browsers only allow sound after the screen was touched once; until then videos play muted"
+  },
+  {
+   "fieldname": "column_break_video",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "max_video_seconds",
+   "fieldtype": "Int",
+   "label": "Cut Videos After (Seconds)",
+   "default": "0",
+   "description": "0 = play to the end"
+  },
+  {
+   "fieldname": "tab_theme",
+   "fieldtype": "Tab Break",
+   "label": "Theme"
+  },
+  {
+   "fieldname": "background_color",
+   "fieldtype": "Color",
+   "label": "Background",
+   "description": "Empty = the standard dark blue"
+  },
+  {
+   "fieldname": "background_image",
+   "fieldtype": "Attach Image",
+   "label": "Background Image"
+  },
+  {
+   "fieldname": "text_color",
+   "fieldtype": "Color",
+   "label": "Text",
+   "default": "#ffffff"
+  },
+  {
+   "fieldname": "heading_color",
+   "fieldtype": "Color",
+   "label": "Headings and Item Name",
+   "default": "#ffffff"
+  },
+  {
+   "fieldname": "column_break_theme",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "price_color",
+   "fieldtype": "Color",
+   "label": "Price",
+   "default": "#6dffb4"
+  },
+  {
+   "fieldname": "accent_color",
+   "fieldtype": "Color",
+   "label": "Accent (savings, highlights)",
+   "default": "#ffb703"
+  },
+  {
+   "fieldname": "offer_color",
+   "fieldtype": "Color",
+   "label": "Offers",
+   "default": "#ff3b5c"
+  },
+  {
+   "fieldname": "ticker_background",
+   "fieldtype": "Color",
+   "label": "Ticker Background",
+   "default": "#ffb703"
+  },
+  {
+   "fieldname": "ticker_text_color",
+   "fieldtype": "Color",
+   "label": "Ticker Text",
+   "default": "#1b1200"
+  },
+  {
+   "fieldname": "font_scale",
+   "fieldtype": "Int",
+   "label": "Text Size (%)",
+   "default": "100",
+   "description": "60 to 200"
+  },
+  {
+   "fieldname": "tab_slides",
+   "fieldtype": "Tab Break",
+   "label": "Slides"
+  },
+  {
+   "fieldname": "slides",
+   "fieldtype": "Table",
+   "label": "Slides",
+   "options": "POS Kiosk Slide",
+   "description": "Played in this order. Each slide can have its own dates, daily hours and days."
+  },
+  {
+   "fieldname": "tab_ticker",
+   "fieldtype": "Tab Break",
+   "label": "Ticker"
+  },
+  {
+   "fieldname": "ticker_separator",
+   "fieldtype": "Data",
+   "label": "Separator",
+   "default": "•"
+  },
+  {
+   "fieldname": "ticker_items",
+   "fieldtype": "Table",
+   "label": "Ticker Lines",
+   "options": "POS Kiosk Ticker"
+  },
+  {
+   "fieldname": "tab_offline",
+   "fieldtype": "Tab Break",
+   "label": "Offline"
+  },
+  {
+   "fieldname": "cache_media",
+   "fieldtype": "Check",
+   "label": "Keep Images and Videos On The Kiosk",
+   "default": "1",
+   "description": "Slides keep playing when the server or internet is down (needs https)"
+  },
+  {
+   "fieldname": "max_cache_mb",
+   "fieldtype": "Int",
+   "label": "Media Storage Limit (MB)",
+   "default": "1024"
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "pos_kiosk_display_help",
+   "fieldtype": "HTML",
+   "label": "POS Kiosk Display Help"
+  }
+ ],
+ "links": [
+  {
+   "group": "Screens",
+   "link_doctype": "POS Kiosk Device",
+   "link_fieldname": "kiosk_display"
+  }
+ ],
+ "modified": "2026-11-26 04:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Kiosk Display",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:display_name",
+ "naming_rule": "By fieldname",
+ "allow_rename": 1,
+ "title_field": "display_name",
+ "document_type": "Setup",
+ "show_title_field_in_link": 0
+}

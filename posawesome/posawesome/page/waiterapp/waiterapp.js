@@ -5,6 +5,10 @@ frappe.pages["waiterapp"].on_page_load = function (wrapper) {
 		parent: wrapper,
 		title: "POS Waiter",
 		single_column: true,
+		// Frappe v16: no workspace sidebar / dock on the POS (pos_compat.css also hides
+		// .body-sidebar-container while the POS route is open, as a fallback)
+		hide_sidebar: true,
+		hide_dock: true,
 	});
 	wrapper.pos_page = page;
 

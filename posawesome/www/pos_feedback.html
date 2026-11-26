@@ -1,0 +1,79 @@
+{% extends "templates/web.html" %}
+
+{% block page_content %}
+<div class="posa-fb" style="max-width:520px;margin:24px auto;padding:0 12px">
+  {% if not valid %}
+    <h3>{{ _("This feedback link is not valid.") }}</h3>
+  {% elif done %}
+    <h3>{{ _("Thank you, we already have your feedback for this bill.") }}</h3>
+  {% else %}
+    <h3>{{ company }}</h3>
+    <p class="text-muted">{{ _("How was your visit? It takes 10 seconds.") }}</p>
+    <form id="posa-fb-form">
+      {% for key, label in [("food", _("Food")), ("service", _("Service")), ("ambience", _("Ambience"))] %}
+      <div class="mb-3">
+        <div class="font-weight-bold">{{ label }}</div>
+        <div class="posa-stars" data-key="{{ key }}">
+          {% for n in range(1, 6) %}<span class="posa-star" data-n="{{ n }}">&#9733;</span>{% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+      <div class="mb-3">
+        <input class="form-control mb-2" name="guest_name" maxlength="140" placeholder="{{ _('Your name (optional)') }}">
+        <textarea class="form-control" name="comments" rows="3" maxlength="2000" placeholder="{{ _('Anything we should know?') }}"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">{{ _("Send") }}</button>
+      <div class="posa-fb-msg mt-3"></div>
+    </form>
+  {% endif %}
+</div>
+<style>
+  .posa-star { font-size: 40px; color: #cfd8dc; cursor: pointer; padding-right: 4px; user-select: none; }
+  .posa-star.on { color: #ffb300; }
+</style>
+{% endblock %}
+
+{% block script %}
+{% if valid and not done %}
+<script>
+  (function () {
+    var rating = { food: 0, service: 0, ambience: 0 };
+    document.querySelectorAll(".posa-stars").forEach(function (box) {
+      box.querySelectorAll(".posa-star").forEach(function (star) {
+        star.addEventListener("click", function () {
+          var n = parseInt(star.dataset.n, 10);
+          rating[box.dataset.key] = n;
+          box.querySelectorAll(".posa-star").forEach(function (s) {
+            s.classList.toggle("on", parseInt(s.dataset.n, 10) <= n);
+          });
+        });
+      });
+    });
+    document.getElementById("posa-fb-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var f = e.target;
+      var msg = f.querySelector(".posa-fb-msg");
+      if (!rating.food && !rating.service && !rating.ambience) {
+        msg.textContent = {{ _("Please tap the stars.")|tojson }};
+        return;
+      }
+      f.querySelector("button").disabled = true;
+      frappe.call({
+        method: "posawesome.posawesome.api.fine_dining_guests.submit_feedback",
+        args: {
+          invoice: {{ invoice|tojson }}, token: {{ token|tojson }},
+          food: rating.food, service: rating.service, ambience: rating.ambience,
+          comments: f.comments.value, guest_name: f.guest_name.value
+        },
+        callback: function () {
+          f.innerHTML = "<h3>" + {{ _("Thank you for your feedback!")|tojson }} + "</h3>";
+        },
+        error: function () {
+          f.querySelector("button").disabled = false;
+        }
+      });
+    });
+  })();
+</script>
+{% endif %}
+{% endblock %}

@@ -25,8 +25,16 @@ SCHEMA_VERSION = 3
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
+NULLISH = (None, "", "null", "undefined", "None")
+
+
+def _clean(value):
+    """Request args arrive as strings: treat "null"/"undefined" like a missing value."""
+    return None if value in NULLISH else value
+
+
 def _loads(value, default=None):
-    if value is None or value == "":
+    if value in NULLISH:
         return default
     if isinstance(value, str):
         return json.loads(value)
@@ -49,6 +57,11 @@ def check_profile_access(pos_profile):
         frappe.throw(_("POS Profile {0} not found").format(name), frappe.DoesNotExistError)
     if "System Manager" in frappe.get_roles():
         return name
+    from posawesome.posawesome.price_checker import is_price_checker
+
+    if is_price_checker() and not frappe.db.get_value("POS Profile", name, "disabled"):
+        # the price checker screen reads products and prices of any active profile
+        return name
     user = frappe.session.user
     if frappe.db.exists("POS Profile User", {"parent": name, "user": user}):
         return name
@@ -63,6 +76,7 @@ def check_profile_access(pos_profile):
 
 
 def _page_args(since, after, limit):
+    since, after = _clean(since), _clean(after)
     since = get_datetime(since) if since else None
     limit = min(max(cint(limit) or 1000, 1), PAGE_MAX)
     return since, cstr(after or ""), limit
@@ -85,16 +99,33 @@ def _cursor(rows):
 def get_profile_item_groups(profile_name):
     from erpnext.accounts.doctype.pos_profile.pos_profile import get_item_groups
 
-    return get_item_groups(profile_name)
+    # v16 returns plain names; v14 returned them SQL-escaped ('Name'). Plain names either way.
+    return [_unquote(g) for g in get_item_groups(profile_name) or []]
+
+
+def _unquote(g):
+    """'KRUNCHEE\\'S' (frappe.db.escape) -> KRUNCHEE'S; plain names unchanged."""
+    g = str(g)
+    if len(g) > 1 and g[0] == g[-1] == "'":
+        g = g[1:-1].replace("\\'", "'").replace("''", "'").replace("\\\\", "\\")
+    return g
 
 
 # ---------------------------------------------------------------------------
 # bootstrap
 # ---------------------------------------------------------------------------
+def _kiosk_only():
+    from posawesome.posawesome.price_checker import is_price_checker_only
+
+    return is_price_checker_only()
+
+
 @frappe.whitelist()
 def get_bootstrap(pos_profile):
     """Everything a terminal needs besides the big catalogue tables."""
     name = check_profile_access(pos_profile)
+    if _kiosk_only():
+        return _kiosk_bootstrap(name)
     profile = frappe.get_doc("POS Profile", name)
     company = frappe.get_cached_doc("Company", profile.company)
 
@@ -141,7 +172,7 @@ def get_bootstrap(pos_profile):
 
     currency = frappe.get_cached_doc("Currency", profile.currency) if profile.currency else None
 
-    from posawesome.posawesome.api.posapp import get_offers, get_sales_person_names
+    from posawesome.posawesome.api.posapp import get_customer_groups, get_offers, get_sales_person_names
 
     return {
         "schema_version": SCHEMA_VERSION,
@@ -192,7 +223,67 @@ def get_bootstrap(pos_profile):
         "customer_groups": frappe.get_all("Customer Group", filters={"is_group": 0}, pluck="name"),
         "territories": frappe.get_all("Territory", filters={"is_group": 0}, pluck="name"),
         "item_groups": get_profile_item_groups(name),
+        "referral_codes": get_referral_codes(profile.company),
+        "rfid_cards": get_rfid_cards(),
+        # terminals re-download items / customers when the profile's scope changes
+        "scope": {
+            "item_groups": sorted(get_profile_item_groups(name) or []),
+            "show_template_items": cint(profile.get("posa_show_template_items")),
+            "customer_groups": sorted(_unquote(g) for g in get_customer_groups(profile.as_dict())),
+        },
     }
+
+
+def _kiosk_bootstrap(name):
+    """What the price checker screen needs: no payments, customers, coupons,
+    referral codes or RFID cards."""
+    from posawesome.posawesome.api.posapp import get_offers
+
+    profile = frappe.get_doc("POS Profile", name)
+    company = frappe.get_cached_doc("Company", profile.company)
+    keep = (
+        "name", "company", "currency", "warehouse", "selling_price_list", "posa_mrp_price_list",
+        "posa_allow_display_mrp", "posa_show_template_items", "item_groups", "modified",
+    )
+    slim = {k: profile.get(k) for k in keep}
+    slim["item_groups"] = [{"item_group": d.item_group} for d in profile.get("item_groups") or []]
+    for f in profile.meta.fields:
+        if f.fieldname.startswith("posa_scale_"):
+            slim[f.fieldname] = profile.get(f.fieldname)
+    return {
+        "kiosk": 1,
+        "server_time": str(now_datetime()),
+        "pos_profile": slim,
+        "company": {"name": company.name, "company_name": company.company_name, "default_currency": company.default_currency},
+        "offers": get_offers(name),
+        "item_groups": get_profile_item_groups(name),
+        "scope": {
+            "item_groups": sorted(get_profile_item_groups(name) or []),
+            "show_template_items": cint(profile.get("posa_show_template_items")),
+            "customer_groups": [],
+        },
+    }
+
+
+def get_referral_codes(company):
+    if not frappe.db.table_exists("Referral Code"):
+        return []
+    rows = frappe.get_all(
+        "Referral Code",
+        filters={"disabled": 0},
+        fields=[
+            "name", "referral_code", "referral_name", "customer", "customer_name",
+            "customer_offer", "primary_offer", "campaign", "company",
+        ],
+        limit_page_length=0,
+    )
+    return [r for r in rows if not r.company or r.company == company]
+
+
+def get_rfid_cards():
+    if not frappe.db.table_exists("RFID Card"):
+        return []
+    return frappe.get_all("RFID Card", filters={"disabled": 0}, fields=["name", "rfid_number"], limit_page_length=0)
 
 
 def get_coupons(profile_name):
@@ -495,11 +586,14 @@ def get_stock_page(pos_profile, since=None, after=None, limit=5000):
 @frappe.whitelist()
 def get_customers_page(pos_profile, since=None, after=None, limit=2000):
     name = check_profile_access(pos_profile)
+    if _kiosk_only():
+        # Price checker screen: products and prices only, no customer data
+        return {"rows": [], "cursor": None, "done": True}
     profile = frappe.get_cached_doc("POS Profile", name)
     since, after, limit = _page_args(since, after, limit)
     from posawesome.posawesome.api.posapp import get_customer_groups
 
-    groups = [g.strip("'") for g in get_customer_groups(profile.as_dict())]
+    groups = [_unquote(g) for g in get_customer_groups(profile.as_dict())]
 
     C = frappe.qb.DocType("Customer")
     q = (
@@ -546,6 +640,8 @@ def get_customers_page(pos_profile, since=None, after=None, limit=2000):
 def get_deleted_documents(since, doctypes=None):
     """Names deleted since `since` (Deleted Document log)."""
     allowed = {"Item", "Item Price", "Customer", "POS Offer", "POS Coupon", "Bin"}
+    if not _clean(since):
+        return []
     doctypes = [d for d in (_loads(doctypes, None) or list(allowed)) if d in allowed]
     rows = frappe.get_all(
         "Deleted Document",
@@ -554,9 +650,16 @@ def get_deleted_documents(since, doctypes=None):
         order_by="creation asc",
         limit_page_length=20000,
     )
-    return [
+    out = [
         {"doctype": r.deleted_doctype, "name": r.deleted_name, "deleted_on": str(r.creation)} for r in rows
     ]
+    # renamed records: the old name is gone (Item code / Customer / Item Price renames)
+    from posawesome.posawesome.api.offline_events import renamed_since
+
+    for doctype, old_name, at in renamed_since(get_datetime(since)):
+        if doctype in doctypes:
+            out.append({"doctype": doctype, "name": old_name, "deleted_on": at})
+    return out
 
 
 @frappe.whitelist()
@@ -653,8 +756,10 @@ def upload_offline_invoices(invoices, process_now=1):
                 )
             to_process.append(offline_id)
             continue
-        # already turned into an invoice by an earlier request that timed out?
-        si = frappe.db.get_value("Sales Invoice", {"posa_offline_id": offline_id}, "name")
+        # already turned into an invoice (an earlier request that timed out, or the
+        # online submit of the same sale reached the server after all)? Drafts of
+        # the sale are not final: processing submits that draft.
+        si = frappe.db.get_value("Sales Invoice", {"posa_offline_id": offline_id, "docstatus": ["!=", 0]}, "name")
         doc = frappe.get_doc(
             {
                 "doctype": "POS Offline Invoice",
@@ -716,7 +821,7 @@ def upload_offline_invoices(invoices, process_now=1):
 
 def _client_datetime(value):
     try:
-        return get_datetime(value) if value else now_datetime()
+        return get_datetime(value) if _clean(value) else now_datetime()
     except Exception:
         return now_datetime()
 
@@ -788,7 +893,11 @@ def process_offline_invoice(offline_id):
         return
     queue_doc = frappe.get_doc("POS Offline Invoice", offline_id)
 
-    existing = frappe.db.get_value("Sales Invoice", {"posa_offline_id": offline_id, "docstatus": ["<", 2]}, "name")
+    # The sale is already on the server as a submitted (or since cancelled)
+    # invoice: never post it a second time. A draft of the sale is reused below.
+    existing = frappe.db.get_value(
+        "Sales Invoice", {"posa_offline_id": offline_id, "docstatus": ["!=", 0]}, "name"
+    )
     if existing:
         queue_doc.db_set({"status": "Synced", "sales_invoice": existing, "error": None})
         frappe.db.commit()
@@ -805,6 +914,20 @@ def process_offline_invoice(offline_id):
         invoice_name = _create_invoice_from_payload(queue_doc)
         frappe.db.commit()
         queue_doc.reload()
+        if isinstance(invoice_name, tuple):
+            # the resumed draft had been submitted on the server already
+            queue_doc.db_set(
+                {
+                    "status": "Duplicate",
+                    "sales_invoice": invoice_name[0],
+                    "error": _(
+                        "Not posted again: this sale's draft {0} was already submitted on the server. "
+                        "Compare it with this offline copy if the cart was changed offline."
+                    ).format(invoice_name[0]),
+                }
+            )
+            frappe.db.commit()
+            return
         queue_doc.db_set({"status": "Synced", "sales_invoice": invoice_name, "error": None})
         frappe.db.commit()
     except Exception:
@@ -845,9 +968,18 @@ def _create_invoice_from_payload(queue_doc):
     if offline_customer and not frappe.db.exists("Customer", payload.get("customer")):
         payload["customer"] = _ensure_offline_customer(offline_customer, payload)
 
+    # The sale may already exist on the server as a draft: one saved online
+    # before the connection dropped (resumed, paid offline), or the draft of
+    # this very sale. That draft becomes the sale; a second invoice is never made.
+    draft_name = _sale_draft(queue_doc.offline_id, payload)
+    if draft_name and not isinstance(draft_name, str):
+        return draft_name  # already submitted: (name,) marker, see _sale_draft
+
     # never trust names coming from the terminal
-    for key in ("name", "amended_from", "docstatus", "owner", "creation", "modified"):
+    for key in ("name", "amended_from", "docstatus", "owner", "creation", "modified", "posa_draft_name"):
         payload.pop(key, None)
+    if draft_name:
+        payload["name"] = draft_name
     payload["doctype"] = "Sales Invoice"
     payload["posa_offline_id"] = queue_doc.offline_id
     payload["posa_offline_created_on"] = str(queue_doc.client_created_on or now_datetime())
@@ -858,10 +990,16 @@ def _create_invoice_from_payload(queue_doc):
         row.pop("name", None)
 
     client_total = flt(payload.get("rounded_total") or payload.get("grand_total"))
+    # What the customer paid on the terminal. prepare_invoice_doc() runs ERPNext's
+    # set_missing_values(), which for a POS invoice rebuilds the payment table from
+    # the POS Profile with amount 0 (update_multi_mode_option); submit then drops
+    # the empty rows and the invoice came out Unpaid. Put the amounts back.
+    client_payments = [dict(p) for p in (payload.get("payments") or [])]
 
     frappe.flags.posa_offline_sync = True
     try:
         invoice_doc = prepare_invoice_doc(payload)
+        _restore_payments(invoice_doc, client_payments)
         invoice_doc.flags.posa_offline_sync = True
         invoice_doc.set_posting_time = 1
         if payload.get("posting_date"):
@@ -873,7 +1011,244 @@ def _create_invoice_from_payload(queue_doc):
         submit_invoice_doc(invoice_doc, payload, data, allow_background=False)
     finally:
         frappe.flags.posa_offline_sync = False
+    _send_printed_to_fbr(invoice_doc, data)
     return invoice_doc.name
+
+
+def _send_printed_to_fbr(invoice_doc, data):
+    """FBR gets an invoice only when it was printed. The terminal flags an
+    offline sale whose receipt it printed (posa_print); send those once the
+    invoice is committed, in a background job so a large upload stays fast."""
+    if not cint((data or {}).get("posa_print")):
+        return
+    if not invoice_doc.get("custom_allow_fbr_on_submit") or invoice_doc.get("fbr_invoice_no"):
+        return
+    frappe.enqueue(
+        "posawesome.events.sales_invoice.submit_to_fbr",
+        queue="short",
+        timeout=300,
+        enqueue_after_commit=True,
+        job_id=f"posa_fbr::{invoice_doc.name}",
+        deduplicate=True,
+        doctype="Sales Invoice",
+        name=invoice_doc.name,
+    )
+
+
+def list_unpaid_offline_invoices(from_date=None):
+    """Read-only: submitted invoices made from offline sales that came out unpaid
+    (before the payment fix) and what the terminal collected for them.
+
+    bench --site <site> execute posawesome.posawesome.api.offline.list_unpaid_offline_invoices
+    bench --site <site> execute posawesome.posawesome.api.offline.list_unpaid_offline_invoices --kwargs "{'from_date': '2026-11-01'}"
+    """
+    rows = frappe.db.sql(
+        """
+        SELECT si.name, si.posting_date, si.pos_profile, si.posa_pos_opening_shift,
+               si.grand_total, si.rounded_total, si.paid_amount, si.outstanding_amount,
+               si.status, q.name AS offline_id, q.payload
+        FROM `tabSales Invoice` si
+        JOIN `tabPOS Offline Invoice` q ON q.sales_invoice = si.name
+        WHERE si.docstatus = 1
+          AND si.is_return = 0
+          AND si.outstanding_amount > 0
+          AND si.posting_date >= %(from_date)s
+        ORDER BY si.posting_date, si.name
+        """,
+        {"from_date": from_date or "2000-01-01"},
+        as_dict=True,
+    )
+    out = []
+    for r in rows:
+        payload = _loads(r.pop("payload"), {}) or {}
+        r["terminal_payments"] = {
+            p.get("mode_of_payment"): flt(p.get("amount"))
+            for p in (payload.get("payments") or [])
+            if flt(p.get("amount"))
+        }
+        out.append(r)
+    print(f"{len(out)} offline invoice(s) submitted with an outstanding amount")
+    for r in out:
+        print(
+            f"{r.name}  {r.posting_date}  {r.pos_profile}  shift {r.posa_pos_opening_shift}  "
+            f"total {r.rounded_total or r.grand_total}  outstanding {r.outstanding_amount}  "
+            f"terminal took {r.terminal_payments}"
+        )
+    return out
+
+
+def _repair_plan(row):
+    """Payment amounts per mode for one unpaid offline invoice: what the terminal
+    took, less the change given back (taken off the cash mode), capped at the
+    outstanding amount."""
+    outstanding = flt(row.outstanding_amount)
+    took = {m: flt(a) for m, a in (row.terminal_payments or {}).items() if flt(a) > 0}
+    if not took or outstanding <= 0:
+        return {}
+    change = max(0.0, flt(sum(took.values()) - outstanding, 2))
+    if change:
+        cash = [m for m in took if frappe.get_cached_value("Mode of Payment", m, "type") == "Cash"]
+        order = cash + sorted((m for m in took if m not in cash), key=lambda m: -took[m])
+        for m in order:
+            cut = min(change, took[m])
+            took[m] = flt(took[m] - cut, 2)
+            change = flt(change - cut, 2)
+            if not change:
+                break
+    plan, left = {}, outstanding
+    for m, amount in sorted(took.items(), key=lambda kv: -kv[1]):
+        amount = min(amount, left)
+        if amount > 0:
+            plan[m] = flt(amount, 2)
+            left = flt(left - amount, 2)
+    return plan
+
+
+def repair_unpaid_offline_invoices(dry_run=1, from_date=None, invoices=None):
+    """Settle offline invoices that were submitted unpaid (before the payment fix)
+    with Payment Entries for what the terminal actually collected.
+
+    Dry run by default: prints the plan and changes nothing.
+      bench --site <site> execute posawesome.posawesome.api.offline.repair_unpaid_offline_invoices
+      bench --site <site> execute posawesome.posawesome.api.offline.repair_unpaid_offline_invoices --kwargs "{'dry_run': 0}"
+    One Payment Entry (Receive) per invoice and mode of payment, dated on the
+    invoice, Reference No = the invoice's POS Opening Shift (so the POS Closing
+    Shift counts it), allocated to the invoice. Cancel the entry to undo."""
+    from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
+    from erpnext.accounts.doctype.sales_invoice.sales_invoice import get_bank_cash_account
+
+    dry_run = cint(dry_run)
+    rows = list_unpaid_offline_invoices(from_date)
+    if invoices:
+        wanted = set(_loads(invoices, invoices) if isinstance(invoices, str) else invoices)
+        rows = [r for r in rows if r.name in wanted]
+    report = []
+    for r in rows:
+        plan = _repair_plan(r)
+        if not plan:
+            report.append({"invoice": r.name, "result": "skipped: no payment recorded on the terminal"})
+            print(f"{r.name}: skipped, no payment recorded on the terminal")
+            continue
+        if dry_run:
+            report.append({"invoice": r.name, "result": "would pay", "plan": plan})
+            print(f"{r.name}: would create Payment Entry {plan} (outstanding {r.outstanding_amount})")
+            continue
+        made = []
+        try:
+            company = frappe.db.get_value("Sales Invoice", r.name, "company")
+            for mop, amount in plan.items():
+                account = get_bank_cash_account(mop, company)["account"]
+                pe = get_payment_entry("Sales Invoice", r.name, party_amount=amount, bank_account=account)
+                pe.mode_of_payment = mop
+                pe.paid_to = account
+                pe.posting_date = r.posting_date
+                pe.reference_no = r.posa_pos_opening_shift or r.name
+                pe.reference_date = r.posting_date
+                pe.paid_amount = amount
+                pe.received_amount = amount
+                for ref in pe.references:
+                    if ref.reference_name == r.name:
+                        ref.allocated_amount = amount
+                pe.remarks = _("Offline sale {0}: payment taken on the POS terminal ({1})").format(r.name, r.offline_id)
+                pe.flags.ignore_permissions = True
+                pe.insert()
+                pe.submit()
+                made.append(pe.name)
+            frappe.db.commit()
+            report.append({"invoice": r.name, "result": "paid", "payment_entries": made, "plan": plan})
+            print(f"{r.name}: paid with {made}")
+        except Exception:
+            frappe.db.rollback()
+            msg = frappe.get_traceback(with_context=False).strip().splitlines()[-1]
+            report.append({"invoice": r.name, "result": "error: " + msg})
+            print(f"{r.name}: NOT repaired: {msg}")
+    if dry_run:
+        print("Dry run: nothing was changed. Run again with dry_run=0 to create the Payment Entries.")
+    return report
+
+
+def _restore_payments(invoice_doc, client_payments):
+    """Set the amounts paid on the terminal on the invoice's payment rows.
+
+    Rows rebuilt from the POS Profile keep their (current) account; a mode paid
+    on the terminal that is no longer in the profile is added back."""
+    paid = {}
+    meta = {}
+    for p in client_payments:
+        mop = p.get("mode_of_payment")
+        if not mop:
+            continue
+        paid[mop] = flt(paid.get(mop)) + flt(p.get("amount"))
+        meta.setdefault(mop, p)
+    if not any(paid.values()):
+        return  # nothing paid on the terminal (credit sale): leave ERPNext's rows
+    rate = flt(invoice_doc.get("conversion_rate")) or 1
+    seen = set()
+    for row in invoice_doc.get("payments") or []:
+        mop = row.mode_of_payment
+        if mop in seen:
+            row.amount = 0
+        else:
+            row.amount = flt(paid.get(mop))
+            seen.add(mop)
+        row.base_amount = flt(row.amount) * rate
+    for mop, amount in paid.items():
+        if mop in seen or not amount:
+            continue
+        p = meta[mop]
+        account = p.get("account")
+        if not account:
+            from erpnext.accounts.doctype.sales_invoice.sales_invoice import get_bank_cash_account
+
+            account = (get_bank_cash_account(mop, invoice_doc.company) or {}).get("account")
+        invoice_doc.append(
+            "payments",
+            {
+                "mode_of_payment": mop,
+                "amount": amount,
+                "base_amount": amount * rate,
+                "account": account,
+                "type": p.get("type") or frappe.get_cached_value("Mode of Payment", mop, "type"),
+                "default": p.get("default") or 0,
+            },
+        )
+
+
+def _sale_draft(offline_id, payload):
+    """The server draft this offline sale continues, locked for update.
+
+    Returns the draft name, None for a new invoice, or a 1-tuple (name,) when
+    the draft was already submitted on the server (e.g. by the background
+    submit job after the terminal lost its connection mid-payment)."""
+    # 1. a draft that already carries this sale id
+    row = frappe.db.get_value(
+        "Sales Invoice", {"posa_offline_id": offline_id, "docstatus": 0}, "name", for_update=True
+    )
+    if row:
+        return row
+    # 2. the server draft the cashier resumed (saved before this terminal set
+    #    sale ids, or whose id was not stored yet)
+    name = payload.get("posa_draft_name") or payload.get("name")
+    if not name or name == offline_id or not frappe.db.exists("Sales Invoice", name):
+        return None
+    draft = frappe.db.get_value(
+        "Sales Invoice",
+        name,
+        ["name", "docstatus", "posa_offline_id", "pos_profile", "company"],
+        as_dict=True,
+        for_update=True,
+    )
+    if draft.pos_profile != payload.get("pos_profile") or draft.company != payload.get("company"):
+        return None
+    if draft.posa_offline_id and draft.posa_offline_id != offline_id:
+        # the draft belongs to another sale id: it was resumed on another
+        # terminal or tab. Only reuse it while it is still a draft.
+        return name if draft.docstatus == 0 else None
+    if draft.docstatus == 0:
+        return name
+    if draft.docstatus == 1:
+        return (name,)
+    return None  # cancelled meanwhile: the sale still happened, post it
 
 
 def _reconcile_payments(invoice_doc, client_total, data):
@@ -951,8 +1326,41 @@ def check_pending_before_closing(opening_shift):
     )
 
 
+# Pole display fields of the first v16 build -> the v14 names now in the fixture.
+_OLD_VFD_FIELDS = {
+    "posa_vfd_protocol": "posa_vfd_command_set",
+    "posa_vfd_welcome_line1": "posa_vfd_line_1",
+    "posa_vfd_welcome_line2": "posa_vfd_line_2",
+    "posa_vfd_thank_you": None,
+}
+_OLD_VFD_PROTOCOL = {
+    "ESC/POS (Epson DM-D, LD220, PD220)": "Epson ESC/POS",
+    "Plain text (CR LF)": "Plain text",
+}
+
+
+def rename_old_vfd_fields():
+    """Copy values from the old pole display fields, then drop those fields."""
+    columns = set(frappe.db.get_table_columns("POS Profile"))
+    for old, new in _OLD_VFD_FIELDS.items():
+        if old in columns and new and new in columns:
+            for name, value in frappe.db.sql(
+                f"select name, `{old}` from `tabPOS Profile` where ifnull(`{old}`, '') != ''"
+            ):
+                if old == "posa_vfd_protocol":
+                    value = _OLD_VFD_PROTOCOL.get(value, value)
+                frappe.db.set_value("POS Profile", name, new, value, update_modified=False)
+        cf = frappe.db.exists("Custom Field", {"dt": "POS Profile", "fieldname": old})
+        if cf:
+            frappe.delete_doc("Custom Field", cf, ignore_permissions=True, force=True)
+
+
 def after_migrate():
     """Indexes used by the keyset pagination of the offline sync."""
+    try:
+        rename_old_vfd_fields()
+    except Exception:
+        frappe.log_error(title="posawesome: could not rename old pole display fields")
     for doctype in ("Item", "Item Price", "Bin", "Customer"):
         try:
             frappe.db.add_index(doctype, ["modified", "name"], index_name="posa_modified_name")

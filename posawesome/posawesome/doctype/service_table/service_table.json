@@ -28,7 +28,9 @@
   "status",
   "occupied",
   "column_break_280tb",
-  "latest_invoice_time"
+  "latest_invoice_time",
+  "help_tab",
+  "service_table_help"
  ],
  "fields": [
   {
@@ -154,11 +156,21 @@
    "ignore_user_permissions": 1,
    "label": "Status",
    "options": "\nAvailable\nOccupied\nReserved\nCleaning\nDisabled"
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "service_table_help",
+   "fieldtype": "HTML",
+   "label": "Service Table Help"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-06 01:20:53.377162",
+ "modified": "2026-11-26 04:00:00.000000",
  "modified_by": "Administrator",
  "module": "POSAwesome",
  "name": "Service Table",

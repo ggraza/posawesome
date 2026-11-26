@@ -10,11 +10,13 @@
 //  posa_queue_<site>               (shared: never lose an invoice when switching profile)
 //     invoices   offline_id           invoices taken offline (indexes: status, created_on, shift)
 //     log        ++id                 sync log for support
+//     drafts     name                 copy of the shift's server drafts (Resume while offline)
+//     holds      sale_id              carts held on this terminal while offline
 
 import { IDB } from "./idb";
 
 const CATALOG_VERSION = 1;
-const QUEUE_VERSION = 1;
+const QUEUE_VERSION = 2;
 
 function slug(value) {
 	return String(value || "default")
@@ -60,6 +62,14 @@ export function queueDatabase() {
 				s.createIndex("pos_opening_shift", "pos_opening_shift");
 			}
 			if (!db.objectStoreNames.contains("log")) db.createObjectStore("log", { autoIncrement: true });
+			if (!db.objectStoreNames.contains("drafts")) {
+				const s = db.createObjectStore("drafts", { keyPath: "name" });
+				s.createIndex("shift", "shift");
+			}
+			if (!db.objectStoreNames.contains("holds")) {
+				const s = db.createObjectStore("holds", { keyPath: "sale_id" });
+				s.createIndex("shift", "shift");
+			}
 		});
 	}
 	return queueDb;

@@ -705,6 +705,7 @@
 import { evntBus } from "../../bus";
 import format from "../../format";
 import offlinePos from "../../../offline";
+import vfd from "../../../shared/vfd";
 export default {
   mixins: [format],
   data: () => ({
@@ -1002,6 +1003,14 @@ export default {
         payment.amount = flt(payment.amount);
         totalPayedAmount += payment.amount;
       });
+      if (this.pos_profile && this.pos_profile.posa_enable_vfd && !this.invoice_doc.is_return) {
+        const due = flt(this.invoice_doc.rounded_total || this.invoice_doc.grand_total);
+        vfd.showChange({
+          paid: totalPayedAmount,
+          change: Math.max(0, totalPayedAmount - due),
+          currency: this.currencySymbol ? this.currencySymbol(this.pos_profile.currency) : '',
+        });
+      }
       if (this.invoice_doc.is_return && totalPayedAmount == 0) {
         this.invoice_doc.is_pos = 0;
       }
@@ -1021,23 +1030,32 @@ export default {
       data["is_cashback"] = this.is_cashback;
 
       const vm = this;
-      if (offlinePos.enabled && (offlinePos.useOffline() || this.invoice_doc.__offline)) {
-        return this.submit_invoice_offline(data, print);
+      // The cart is cleared right after this call; the answer may come much
+      // later. Keep this sale's document: never queue the next sale by mistake.
+      const invoice_doc = this.invoice_doc;
+      if (!invoice_doc.posa_offline_id) invoice_doc.posa_offline_id = offlinePos.newSaleId();
+      if (offlinePos.enabled && (offlinePos.useOffline() || invoice_doc.__offline)) {
+        return this.submit_invoice_offline(data, print, invoice_doc);
       }
       frappe.call({
         method: "posawesome.posawesome.api.posapp.submit_invoice",
         args: {
           data: data,
-          invoice: this.invoice_doc,
+          invoice: invoice_doc,
         },
         async: true,
         error: function (xhr) {
-          // connection lost after the draft was saved: keep the sale in the offline queue
+          // Connection lost while submitting. The request may still have reached
+          // the server: the queued copy carries the same sale id and draft name,
+          // so the server posts the sale once whichever arrives first.
           if (offlinePos.enabled && (!xhr || !xhr.status || [502, 503, 504].includes(xhr.status))) {
-            vm.submit_invoice_offline(data, print);
+            vm.submit_invoice_offline(data, print, invoice_doc);
           }
         },
         callback: function (r) {
+          if (r.message && offlinePos.enabled) {
+            offlinePos.forgetSale({ name: r.message.name, saleId: invoice_doc.posa_offline_id }).catch(() => {});
+          }
           if (r.message) {
             if (print) {
             //   if (vm.pos_profile.allow_fbr_on_submit) {
@@ -1051,27 +1069,27 @@ export default {
                 frappe.call({
                   method: "posawesome.events.sales_invoice.submit_to_fbr",
                   args: {
-                    doctype: vm.invoice_doc.doctype,  // Pass doctype
-                    name: vm.invoice_doc.name         // Pass name
+                    doctype: invoice_doc.doctype,  // Pass doctype
+                    name: r.message.name         // Pass name
                     // doc: vm.invoice_doc, // Passing invoice_doc as arg
                   },
                   async: true,
                   callback: function (fbr_res) {
                     console.log("FBR submission result:", fbr_res);
                     // Proceed with printing after FBR submission
-                    vm.load_print_page();
+                    vm.load_print_page(r.message.name);
                   },
                   error: function (err) {
                     console.error("FBR submission failed:", err);
                     // Still allow printing but log error
-                    vm.load_print_page();
+                    vm.load_print_page(r.message.name);
                   }
                 });
               } else {
-                vm.load_print_page();
+                vm.load_print_page(r.message.name);
               }
             }
-            evntBus.$emit("set_last_invoice", vm.invoice_doc.name);
+            evntBus.$emit("set_last_invoice", r.message.name);
             evntBus.$emit("show_mesage", {
               text: `Invoice ${r.message.name} is Submited`,
               color: "success",
@@ -1082,17 +1100,19 @@ export default {
         },
       });
     },
-    async submit_invoice_offline(data, print) {
+    async submit_invoice_offline(data, print, invoice_doc = null) {
       // invoice_doc was computed locally (offline/taxes.js); queue it and print a receipt
       const vm = this;
+      const source = invoice_doc || vm.invoice_doc;
       try {
-        const invoice = { ...vm.invoice_doc };
+        const invoice = { ...source };
         if (!invoice.__offline) {
           // came from the server as a draft: rebuild totals locally to be safe
-          Object.assign(invoice, offlinePos.buildInvoice(invoice), { payments: vm.invoice_doc.payments });
+          // (name + posa_offline_id stay: the server turns that draft into the sale)
+          Object.assign(invoice, offlinePos.buildInvoice(invoice), { payments: source.payments, name: source.name });
         }
-        invoice.is_pos = vm.invoice_doc.is_pos;
-        invoice.due_date = vm.invoice_doc.due_date;
+        invoice.is_pos = source.is_pos;
+        invoice.due_date = source.due_date;
         const record = await offlinePos.submitInvoice(invoice, data, { print });
         evntBus.$emit("set_last_invoice", record.offline_id);
         evntBus.$emit("show_mesage", {
@@ -1162,7 +1182,7 @@ export default {
         payment.amount = 0;
       });
     },
-    load_print_page() {
+    load_print_page(name = null) {
       const print_format =
         this.pos_profile.print_format_for_online ||
         this.pos_profile.print_format;
@@ -1170,7 +1190,7 @@ export default {
       const url =
         frappe.urllib.get_base_url() +
         "/printview?doctype=Sales%20Invoice&name=" +
-        this.invoice_doc.name +
+        encodeURIComponent(name || this.invoice_doc.name) +
         "&trigger_print=1" +
         "&format=" +
         print_format +

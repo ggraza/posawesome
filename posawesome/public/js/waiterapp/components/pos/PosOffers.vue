@@ -155,6 +155,8 @@ export default {
         );
         if (pos_offer) {
           pos_offer.items = offer.items;
+          // repeating free product: the free qty follows the cart
+          pos_offer.qualify_qty = offer.qualify_qty;
           if (
             pos_offer.offer === 'Grand Total' &&
             !this.discount_percentage_offer_name

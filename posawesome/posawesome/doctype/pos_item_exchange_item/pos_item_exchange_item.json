@@ -1,0 +1,140 @@
+{
+ "actions": [],
+ "creation": "2026-11-23 01:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "item_name",
+  "uom",
+  "conversion_factor",
+  "qty",
+  "previously_returned",
+  "column_break_1",
+  "rate",
+  "discount_percentage",
+  "amount",
+  "batch_no",
+  "serial_no",
+  "original_row",
+  "currency"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "label": "Item Code",
+   "options": "Item",
+   "in_list_view": 1,
+   "read_only": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name",
+   "in_list_view": 1,
+   "read_only": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM",
+   "in_list_view": 1,
+   "read_only": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "conversion_factor",
+   "fieldtype": "Float",
+   "label": "UOM Conversion Factor",
+   "read_only": 1
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Float",
+   "label": "Qty",
+   "in_list_view": 1,
+   "read_only": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "previously_returned",
+   "fieldtype": "Float",
+   "label": "Previously Returned",
+   "read_only": 1,
+   "description": "Returned before this exchange (returned items)."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rate",
+   "fieldtype": "Currency",
+   "label": "Rate",
+   "options": "currency",
+   "in_list_view": 1,
+   "read_only": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "discount_percentage",
+   "fieldtype": "Percent",
+   "label": "Discount %",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "options": "currency",
+   "in_list_view": 1,
+   "read_only": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "batch_no",
+   "fieldtype": "Link",
+   "label": "Batch No",
+   "options": "Batch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "serial_no",
+   "fieldtype": "Small Text",
+   "label": "Serial No",
+   "read_only": 1
+  },
+  {
+   "fieldname": "original_row",
+   "fieldtype": "Data",
+   "label": "Original Invoice Row",
+   "read_only": 1,
+   "description": "Sales Invoice Item of the original sale (returned items)."
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "hidden": 1,
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-23 01:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Item Exchange Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

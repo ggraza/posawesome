@@ -16,3 +16,21 @@ body.posa-fullscreen { overflow: hidden; }
   white-space: normal;
   opacity: 1;
 }
+
+/* Frappe v16: hide the workspace sidebar while a POS route (rmsapp / waiterapp) is
+   open, and let the POS use the full width. body.posa-fullscreen is set by
+   fullscreen_mount.js only while the POS route is active, so other desk pages
+   keep their sidebar. */
+body.posa-fullscreen .body-sidebar-container,
+body.posa-fullscreen .body-sidebar,
+body.posa-fullscreen .body-sidebar-placeholder,
+body.posa-fullscreen .layout-side-section,
+body.posa-fullscreen > .dock {
+  display: none !important;
+}
+body.posa-fullscreen .main-section,
+body.posa-fullscreen .main-section > .posa-root {
+  margin-left: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}

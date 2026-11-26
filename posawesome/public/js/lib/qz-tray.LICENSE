@@ -1,0 +1,11 @@
+qz-tray.js 2.2.5 - QZ Tray JavaScript API
+https://github.com/qzind/tray
+Copyright (c) QZ Industries, LLC
+Licensed under the GNU Lesser General Public License v2.1 (LGPL-2.1).
+https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+Taken from the npm package qz-tray@2.2.5 with two changes:
+- the node.js-only require('path') call in _qz.tools.absolute was removed so
+  the file bundles for the browser without a node dependency;
+- the export at the end sets module.exports before trying AMD define(), so the
+  esbuild import always receives the qz object.

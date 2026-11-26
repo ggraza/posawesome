@@ -86,7 +86,8 @@ export async function serverCall(method, args = {}, { timeout = 30000, method_ty
 	const timer = controller ? setTimeout(() => controller.abort(), timeout) : null;
 	const body = new URLSearchParams();
 	for (const [k, v] of Object.entries(args || {})) {
-		if (v === undefined) continue;
+		// Frappe gets every arg as text: a null would arrive as the string "null"
+		if (v === undefined || v === null) continue;
 		body.append(k, typeof v === "string" ? v : JSON.stringify(v));
 	}
 	let response;

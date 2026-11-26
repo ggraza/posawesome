@@ -21,20 +21,42 @@ def get_kitchen_tickets(company=None, unit=None, status=None, from_date=None, to
     if search:
         filters["name"] = ["like", f"%{search}%"]
 
+    fd = frappe.get_meta("Kitchen Ticket").has_field("ticket_type")
+    ticket_fields = ["name", "sales_invoice", "status", "kitchen_production_unit", "creation", "company"]
+    if fd:
+        # fine dining: VOID tickets, table and guests
+        ticket_fields += ["ticket_type", "service_table", "covers"]
+    if frappe.get_meta("Kitchen Ticket").has_field("target_minutes"):
+        ticket_fields += ["pos_profile", "target_minutes", "allergy_note"]
     tickets = frappe.get_all(
         "Kitchen Ticket",
         filters=filters,
-        fields=["name", "sales_invoice", "status", "kitchen_production_unit", "creation", "company"],
+        fields=ticket_fields,
         order_by="creation desc",
         limit_page_length=100
     )
 
+    item_fields = ["item_name", "qty", "posa_notes"]
+    if frappe.get_meta("Kitchen Ticket Items").has_field("posa_seat"):
+        item_fields += ["posa_seat", "posa_course", "posa_modifiers"]
+    if frappe.get_meta("Kitchen Ticket Items").has_field("item_status"):
+        item_fields += ["name", "item_code", "item_status", "posa_allergen_alert"]
+    # fine dining phase 3: what each ticket's POS Profile allows on this screen
+    flags = {}
+    if frappe.get_meta("Kitchen Ticket").has_field("target_minutes"):
+        from posawesome.posawesome.api.fine_dining_kitchen import kitchen_settings
+
+        for p in {t.get("pos_profile") for t in tickets if t.get("pos_profile")}:
+            flags[p] = kitchen_settings(p)
+
     # Append items for each ticket
     for t in tickets:
+        t["fd"] = flags.get(t.get("pos_profile")) or {}
         t["items"] = frappe.get_all(
             "Kitchen Ticket Items",
             filters={"parent": t.name},
-            fields=["item_name", "qty", "posa_notes"]
+            fields=item_fields,
+            order_by="idx asc",
         )
 
     return tickets
