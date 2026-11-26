@@ -77,7 +77,7 @@ export default {
 
   methods: {
     customer_blur() {
-      this.$refs.customerField.blur();
+      this.$refs.customerField?.blur?.();
     },
     shortCustomer(e) {
       if (e.key === "c" && e.altKey) {
@@ -85,7 +85,7 @@ export default {
         if (this.$root) {
           evntBus.$emit('inputBlurTriggered');
         }
-        this.$refs.customerField.focus();
+        this.$refs.customerField?.focus?.();
       }
     },
     get_customer_names() {
@@ -199,7 +199,7 @@ export default {
         if (this.$root) {
           evntBus.$emit('escEventTriggered');
         }
-        this.$refs.customerField.blur();
+        this.$refs.customerField?.blur?.();
       }
       evntBus.$emit('update_customer', this.customer);
     },

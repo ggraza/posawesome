@@ -5,6 +5,7 @@
     <ExpenseInvoice></ExpenseInvoice>
     <SalesOrders></SalesOrders>
     <Returns></Returns>
+    <ItemExchange></ItemExchange>
     <NewAddress></NewAddress>
     <MpesaPayments></MpesaPayments>
     <Variants></Variants>
@@ -169,10 +170,13 @@ import ClosingDialog from './ClosingDialog.vue';
 import NewAddress from './NewAddress.vue';
 import Variants from './Variants.vue';
 import Returns from './Returns.vue';
+import ItemExchange from './ItemExchange.vue';
 import MpesaPayments from './Mpesa-Payments.vue';
 import HoldInvoice from './HoldInvoice.vue';
 import SubmitedInvoice from './SubmitedInvoice.vue';
-import offlinePos from '../../../offline';
+import offlinePos, { offlineState } from '../../../offline';
+import vfd from '../../../shared/vfd';
+import * as qzPrint from '../../../offline/qz_print';
 import { serverCall, NetworkError } from '../../../offline/network';
 
 export default {
@@ -201,6 +205,7 @@ export default {
     ClosingDialog,
 
     Returns,
+    ItemExchange,
     PosOffers,
     PosCoupons,
     NewAddress,
@@ -211,10 +216,42 @@ export default {
     SubmitedInvoice,
   },
 
+  computed: {
+    offlineCatalogVersion() {
+      return offlineState.catalogVersion;
+    },
+    offlineBootstrapVersion() {
+      return offlineState.bootstrapVersion;
+    },
+  },
+  watch: {
+    // the offline catalogue changed (sync after an ERPNext change, periodic, reconnect)
+    offlineCatalogVersion() {
+      evntBus.$emit('offline_catalog_updated');
+    },
+    // POS Offers / Coupons / Referral Codes / RFID Cards changed on the server
+    offlineBootstrapVersion() {
+      const boot = offlinePos.catalog.getMeta('bootstrap');
+      if (boot && boot.offers) evntBus.$emit('set_offers', boot.offers);
+      evntBus.$emit('offline_settings_updated', boot);
+    },
+  },
   methods: {
     register(data) {
       this.pos_profile = data.pos_profile;
       this.pos_opening_shift = data.pos_opening_shift;
+      // customer pole display (VFD): configured from the POS Profile
+      try {
+        vfd.configure(data.pos_profile);
+      } catch (e) {
+        console.warn("pole display", e); // never block the POS
+      }
+      // QZ Tray silent / raw receipt printing: configured from the POS Profile
+      try {
+        qzPrint.init(data.pos_profile);
+      } catch (e) {
+        console.warn("QZ Tray", e); // never block the POS
+      }
       // offline cache first so components can use it when they react to the event
       return offlinePos
         .init(data)
@@ -240,7 +277,7 @@ export default {
           if (e instanceof NetworkError) {
             // server unreachable: continue with the shift saved by the last online start
             const cached = offlinePos.lastOpeningData();
-            if (cached && cached.pos_profile && Number(cached.pos_profile.posa_enable_offline)) {
+            if (cached && cached.pos_profile && Number(cached.pos_profile.posa_enable_offline || cached.pos_profile.posa_enable_offline_invoices)) {
               evntBus.$emit('show_mesage', {
                 text: __('Server unreachable - working offline with shift {0}', [cached.pos_opening_shift.name]),
                 color: 'warning',

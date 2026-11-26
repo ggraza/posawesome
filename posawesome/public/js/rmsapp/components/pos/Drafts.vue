@@ -85,6 +85,7 @@
 
 <script>
 import { evntBus } from '../../bus';
+import offlinePos from '../../../offline';
 import format from '../../format';
 export default {
   mixins: [format],
@@ -214,19 +215,16 @@ export default {
   },
   methods: {
     get_draft_invoices() {
-      const vm = this;
-      frappe.call({
-        method: 'posawesome.posawesome.api.posapp.get_draft_invoices',
-        args: {
-          pos_opening_shift: this.pos_opening_shift.name,
-        },
-        async: false,
-        callback: function (r) {
-          if (r.message) {
-            evntBus.$emit('open_hold', r.message);
-          }
-        },
-      });
+      if (!this.pos_opening_shift || !this.pos_opening_shift.name) return;
+      // server drafts, or the copy kept on this terminal while offline,
+      // with the carts held offline first
+      offlinePos
+        .loadDrafts(this.pos_opening_shift.name)
+        .then((rows) => evntBus.$emit('open_hold', rows))
+        .catch((e) => {
+          console.error(e);
+          evntBus.$emit('show_mesage', { text: (e && e.message) || String(e), color: 'error' });
+        });
     },
     focusFirstRow() {
       this.$nextTick(() => {

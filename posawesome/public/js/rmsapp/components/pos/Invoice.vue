@@ -551,7 +551,8 @@
     :headers="items_headers_rms"
     :items="items"
     item-value="posa_row_id"
-    class="elevation-1"
+    class="elevation-1 posa-cart-table"
+    :row-props="cart_row_props"
     :items-per-page="itemsPerPage"
     hide-default-footer
     @click:row="(event, row) => openItemDialog(row.item, row)"
@@ -591,7 +592,8 @@
             v-model:expanded="expanded"
             show-expand
             item-value="posa_row_id"
-            class="elevation-1"
+            class="elevation-1 posa-cart-table"
+            :row-props="cart_row_props"
             :items-per-page="itemsPerPage"
             hide-default-footer
             @click:row="(event, row) => onRowClick(row.item, row)"
@@ -677,16 +679,11 @@
                       bg-color="white"
                       hide-details
                       type="number"
-                      :model-value="item.qty"
-                      @update:model-value="onQtyInput(item, $event)"
-                      @change="
-                        [
-                          setFormatedFloat(item, 'qty', null, false, $event.target.value),
-                          calc_stock_qty(item, $event.target.value),
-                          $evntBus.$emit('escEventTriggered'),
-                          expandedHandler(),
-                        ]
-                      "
+                      :model-value="qty_value(item)"
+                      @update:model-value="qty_typed(item, $event)"
+                      @keydown.enter.prevent="apply_qty(item)"
+                      @keydown.esc.stop.prevent="cancel_qty(item)"
+                      @change="apply_qty(item)"
                       :rules="[isNumber]"
                       :disabled="!!item.posa_is_offer || !!item.posa_is_replace"
                       @focus="selectAllText"
@@ -1359,11 +1356,14 @@
 </template>
 
 <script>
+import { toRaw } from "vue";
 import { evntBus } from "../../bus";
 import format from "../../format";
 import Customer from "./Customer.vue";
 import RFIDPopup from './RFIDPopup.vue';
 import offlinePos from "../../../offline";
+import vfd from "../../../shared/vfd";
+import { offerMatchesItem } from "../../../offline/offer_targets";
 
 export default {
   mixins: [format],
@@ -1391,6 +1391,7 @@ export default {
       invoiceType: "Invoice",
       itemsPerPage: 1000,
       expanded: [],
+      qty_drafts: {}, // QTY being typed per cart row: applied with Enter (or leaving the field)
       singleExpand: true,
       cancel_dialog: false,
       tax_dialog: false,
@@ -1428,6 +1429,13 @@ export default {
       posting_date: frappe.datetime.nowdate(),
       readonly: false,
       draftInvoicesCount: 0, // Initialize the count
+      // id of the sale in the cart (Sales Invoice.posa_offline_id). Every save,
+      // submit, retry and offline copy of this sale carries it, so the server
+      // always finds the one invoice of the sale (no duplicates).
+      sale_id: null,
+      // Row last added or whose qty changed: highlighted for the cashier.
+      highlight_row_id: null,
+      highlight_flip: false,
       customer_outstanding: 0, // Customer balance
       items_headers: [
         {
@@ -1514,6 +1522,8 @@ customerDisplayPayload() {
     discount_amount: flt(this.discount_amount),
     delivery_charges: flt(this.delivery_charges_rate),
     total: this.subtotal,
+    // with taxes and rounding, once the payment screen has the saved invoice
+    grand_total: this.invoice_doc ? flt(this.invoice_doc.rounded_total || this.invoice_doc.grand_total) : 0,
   };
 },
     filteredTables() {
@@ -1631,6 +1641,38 @@ initCustomerDisplay() {
     }, 0);
   });
 },
+    // QTY field: typing only changes the field. Enter (or leaving the field)
+    // applies it; Esc throws it away. Applying on every key moved the focus
+    // away after the first digit, so 12 / 250 could not be typed.
+    qty_value(item) {
+      const key = item.posa_row_id;
+      return key in this.qty_drafts ? this.qty_drafts[key] : item.qty;
+    },
+    qty_typed(item, value) {
+      this.qty_drafts[item.posa_row_id] = value;
+    },
+    apply_qty(item) {
+      const key = item.posa_row_id;
+      if (!(key in this.qty_drafts)) return; // nothing typed (or applied already)
+      const value = this.qty_drafts[key];
+      delete this.qty_drafts[key];
+      const qty = parseFloat(value);
+      if (value === "" || value === null || isNaN(qty)) {
+        // empty / not a number: keep the quantity it had
+        this.expandedHandler();
+        evntBus.$emit("escEventTriggered");
+        return;
+      }
+      this.setFormatedFloat(item, "qty", null, false, value);
+      this.calc_stock_qty(item, value);
+      evntBus.$emit("escEventTriggered");
+      this.expandedHandler();
+    },
+    cancel_qty(item) {
+      delete this.qty_drafts[item.posa_row_id];
+      this.expandedHandler();
+      evntBus.$emit("escEventTriggered");
+    },
     onQtyInput(item, value) {
       this.$set(item, "qty", value);
       this.$set(item, "amount", flt(value || 0) * flt(item.rate || 0));
@@ -2099,7 +2141,7 @@ minusQty() {
       evntBus.$emit("open_expense", "true");
     },
     discount_blur() {
-      this.$refs.discount.blur();
+      this.$refs.discount?.blur?.();
     },
     selectAllText() {
       if (this.$refs.qtyField) {
@@ -2224,7 +2266,7 @@ subtract_one(item) {
         );
       }
       if (index === -1 || this.new_line) {
-        const new_item = this.get_new_item(item);
+        let new_item = this.get_new_item(item);
       if (returnMode) {
         new_item.qty = -Math.abs(new_item.qty || 1);
         new_item.stock_qty = new_item.qty;
@@ -2241,6 +2283,9 @@ subtract_one(item) {
           this.set_batch_qty(new_item, new_item.batch_no, false);
         }
         this.items.unshift(new_item);
+        // Vue 3: only the copy inside this.items is reactive; later (async)
+        // changes must go to that one or the cart does not redraw.
+        new_item = this.items[0];
         this.update_item_detail(new_item);
         // restore custom rate AFTER update
         if (item.posa_custom_rate) {
@@ -2281,7 +2326,8 @@ if (this.pos_profile.posa_allow_display_mrp) {
         if (!cur_item.has_batch_no) {
           // cur_item.qty += item.qty || 1;
           cur_item.qty += qtyToAdd;
-          if (item.rate) {
+          // A row with an offer keeps its offer price.
+          if (item.rate && !cur_item.posa_offer_applied) {
             cur_item.rate = flt(item.rate);
             cur_item.price_list_rate = flt(item.rate);
           }
@@ -2390,10 +2436,14 @@ if (this.pos_profile.posa_allow_display_mrp) {
                 text: r.message,
                 color: "warning",
               });
+              if (offlinePos.enabled) offlinePos.forgetSale({ name: doc.name, saleId: doc.posa_offline_id }).catch(() => {});
             }
           },
         });
       }
+      // Cancel discards the cart: a hold it came from is discarded too
+      if (offlinePos.enabled && this.sale_id) offlinePos.releaseHold(this.sale_id).catch(() => {});
+      this.sale_id = null;
       this.items = [];
       this.custom_rfid_card = "";
       this.posa_offers = [];
@@ -2424,16 +2474,31 @@ if (this.pos_profile.posa_allow_display_mrp) {
       // Save the current invoice before resetting
       const doc = this.get_invoice_doc();
       if ((doc.name || doc.items.length) && offlinePos.useOffline()) {
-        // held invoices live on the server; they cannot be saved while offline
-        if (doc.items.length && !data.name && !data.is_return) {
-          evntBus.$emit("show_mesage", {
-            text: __("Offline: the current sale was not held (holding needs the server)"),
-            color: "warning",
-          });
+        // Server unreachable: hold the cart on this terminal. It is saved as a
+        // server draft (the same draft when it was one) when the server is back.
+        if (doc.items.length && !doc.is_return) {
+          const held = offlinePos.buildInvoice(doc);
+          offlinePos
+            .holdCart(held)
+            .then(() => {
+              evntBus.$emit("show_mesage", {
+                text: __("Held on this terminal (offline). It is saved to the server when the connection is back."),
+                color: "info",
+              });
+              this.get_draft_invoices_count();
+            })
+            .catch((e) => {
+              console.error(e);
+              evntBus.$emit("show_mesage", { text: __("Could not hold the sale offline: {0}", [e.message || e]), color: "error" });
+            });
         }
       } else if (doc.name || doc.items.length) {
         old_invoice = this.update_invoice(doc);
       }
+      // the next cart is a new sale (a loaded draft brings its own id)
+      // the next cart is a new sale (a loaded draft / hold brings its own id).
+      // A resumed hold stays stored until the sale is paid, held again or cancelled.
+      this.sale_id = data && data.posa_offline_id ? data.posa_offline_id : null;
       // Reset state only if not loading a specific invoice or return
       if (!data.name && !data.is_return) {
         this.items = [];
@@ -2459,6 +2524,7 @@ if (this.pos_profile.posa_allow_display_mrp) {
         this.update_items_details(this.items);
         this.posa_offers = data.posa_offers || []; // Load posa_offers from data
         this.posa_coupons = data.posa_coupons || [];
+        this.prepare_loaded_items(this.items);
         this.items.forEach((item) => {
           if (!item.posa_row_id) {
             item.posa_row_id = this.makeid(20);
@@ -2488,6 +2554,25 @@ if (this.pos_profile.posa_allow_display_mrp) {
       return old_invoice;
     },
 
+    // A held sale, draft or order loaded into the cart: offers match on
+    // stock qty, item group and brand, which a sale held on this terminal
+    // does not carry.
+    prepare_loaded_items(items) {
+      const byCode = {};
+      (this.allItems || []).forEach((i) => (byCode[i.item_code] = i));
+      (items || []).forEach((item) => {
+        const cat =
+          byCode[item.item_code] ||
+          (offlinePos.enabled && offlinePos.catalog.getItem(item.item_code)) ||
+          {};
+        item.conversion_factor = flt(item.conversion_factor) || 1;
+        if (!flt(item.stock_qty)) item.stock_qty = flt(item.qty) * item.conversion_factor;
+        if (!item.item_group && cat.item_group) item.item_group = cat.item_group;
+        if (!item.brand && cat.brand) item.brand = cat.brand;
+        if (!item.posa_offers) item.posa_offers = "[]";
+      });
+    },
+
     async new_order(data = {}) {
       let old_invoice = null;
       evntBus.$emit("set_customer_readonly", false);
@@ -2515,6 +2600,7 @@ if (this.pos_profile.posa_allow_display_mrp) {
         this.items = data.items;
         this.update_items_details(this.items);
         this.posa_offers = data.posa_offers || [];
+        this.prepare_loaded_items(this.items);
         this.items.forEach((item) => {
           if (!item.posa_row_id) {
             item.posa_row_id = this.makeid(20);
@@ -2544,6 +2630,51 @@ if (this.pos_profile.posa_allow_display_mrp) {
       return old_invoice;
     },
 
+    // Mark the row just added, or whose qty changed, and bring it into view.
+    // A whole cart loaded at once (resumed draft) marks nothing.
+    highlight_changed_row() {
+      const items = this.items || [];
+      const seen = this._hl_seen || {};
+      const now = {};
+      let changed = null;
+      let count = 0;
+      items.forEach((it) => {
+        const key = it.posa_row_id;
+        if (!key) return;
+        now[key] = flt(it.qty);
+        if (seen[key] !== now[key]) {
+          changed = it;
+          count += 1;
+        }
+      });
+      const fresh = !Object.keys(seen).length;
+      this._hl_seen = now;
+      if (!items.length) {
+        this.highlight_row_id = null;
+        return;
+      }
+      if (!changed || (fresh && count > 1)) return;
+      this.highlight_row_id = changed.posa_row_id;
+      this.highlight_flip = !this.highlight_flip; // restarts the flash
+      this.$nextTick(() => {
+        const row = this.$el && this.$el.querySelector && this.$el.querySelector(".posa-cart-table tr.posa-row-changed");
+        if (row && row.scrollIntoView) row.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+    },
+    // Vuetify 3 v-data-table row attributes
+    cart_row_props({ item }) {
+      const row = item && item.raw ? item.raw : item;
+      if (!row || row.posa_row_id !== this.highlight_row_id) return {};
+      return { class: this.highlight_flip ? "posa-row-changed posa-flash-a" : "posa-row-changed posa-flash-b" };
+    },
+
+    current_sale_id() {
+      const doc_id = this.invoice_doc && this.invoice_doc.posa_offline_id;
+      if (doc_id) this.sale_id = doc_id;
+      if (!this.sale_id) this.sale_id = offlinePos.newSaleId();
+      return this.sale_id;
+    },
+
     get_invoice_doc() {
       let doc = {};
       if (this.invoice_doc.name) {
@@ -2567,6 +2698,7 @@ if (this.pos_profile.posa_allow_display_mrp) {
         this.additional_discount_percentage
       );
       doc.posa_pos_opening_shift = this.pos_opening_shift.name;
+      doc.posa_offline_id = this.current_sale_id();
       doc.payments = this.get_payments();
       doc.taxes = [];
       doc.is_return = this.invoice_doc.is_return;
@@ -2666,6 +2798,9 @@ if (this.pos_profile.posa_allow_display_mrp) {
           posa_is_replace: item.posa_is_replace,
           is_free_item: item.is_free_item,
           qty: flt(item.qty),
+          stock_qty: flt(item.stock_qty) || flt(item.qty) * (flt(item.conversion_factor) || 1),
+          item_group: item.item_group,
+          brand: item.brand,
           rate: flt(item.rate),
           uom: item.uom,
           amount: flt(item.qty) * flt(item.rate),
@@ -2700,6 +2835,9 @@ if (this.pos_profile.posa_allow_display_mrp) {
           posa_is_replace: item.posa_is_replace,
           is_free_item: item.is_free_item,
           qty: flt(item.qty),
+          stock_qty: flt(item.stock_qty) || flt(item.qty) * (flt(item.conversion_factor) || 1),
+          item_group: item.item_group,
+          brand: item.brand,
           rate: flt(item.rate),
           uom: item.uom,
           amount: flt(item.qty) * flt(item.rate),
@@ -2748,6 +2886,8 @@ if (this.pos_profile.posa_allow_display_mrp) {
           if (r.message) {
             vm.invoice_doc = r.message;
             updated = true;
+            // keep the shift's drafts on this terminal for Resume while offline
+            if (offlinePos.enabled) offlinePos.upsertDraft(r.message).catch(() => {});
           }
         },
       });
@@ -3356,43 +3496,31 @@ if (this.invoice_doc.is_return) {
     },
     get_draft_invoices() {
       const vm = this;
-      if (offlinePos.useOffline()) {
-        evntBus.$emit("show_mesage", { text: __("Held invoices are not available offline"), color: "warning" });
-        return;
-      }
-      frappe.call({
-        method: "posawesome.posawesome.api.posapp.get_draft_invoices",
-        args: {
-          pos_opening_shift: this.pos_opening_shift.name,
-        },
-        async: false,
-        callback: function (r) {
-          if (r.message) {
-            evntBus.$emit("open_drafts", r.message);
-          }
-        },
-      });
-      this.get_draft_invoices_count();
+      const shift = this.pos_opening_shift && this.pos_opening_shift.name;
+      if (!shift) return;
+      // server drafts, or (offline) the copy kept on this terminal; carts held
+      // offline are listed first
+      offlinePos
+        .loadDrafts(shift)
+        .then((rows) => {
+          vm.draftInvoicesCount = rows.length;
+          evntBus.$emit("open_drafts", rows);
+        })
+        .catch((e) => {
+          console.error(e);
+          evntBus.$emit("show_mesage", { text: (e && e.message) || String(e), color: "error" });
+        });
     },
     get_draft_invoices_count() {
-      if (offlinePos.useOffline()) return;
       if (!this.pos_opening_shift || !this.pos_opening_shift.name) {
           console.warn("Cannot load drafts: POS opening shift missing");
           return;
       }
       const vm = this;
-      frappe.call({
-        method: "posawesome.posawesome.api.posapp.get_draft_invoices",
-        args: {
-          pos_opening_shift: this.pos_opening_shift.name,
-        },
-        async: false,
-        callback: function (r) {
-          if (r.message) {
-            vm.draftInvoicesCount = r.message.length;
-          }
-        },
-      });
+      offlinePos
+        .loadDrafts(this.pos_opening_shift.name)
+        .then((rows) => (vm.draftInvoicesCount = rows.length))
+        .catch(() => {});
     },
 
     get_draft_orders() {
@@ -3526,8 +3654,16 @@ if (this.invoice_doc.is_return) {
       });
     },
 
+    // The reactive cart row for `item` (Vue 3 keeps the plain object and the
+    // reactive proxy apart). Writes to the plain object are not shown.
+    live_row(item) {
+      const raw = toRaw(item);
+      return this.items.find((row) => row === item || toRaw(row) === raw) || item;
+    },
+
     apply_item_detail(item, data) {
       const vm = this;
+      item = vm.live_row(item);
       {
         {
           {
@@ -3876,24 +4012,38 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
       }
     },
 
+    // The row the "first item" shortcuts act on (+ / Ctrl+Q / F6 open it,
+    // Ctrl++ / Ctrl+- change its qty, Ctrl+D deletes it): the first item the
+    // cashier scanned, not a free / replaced offer row (the "Offer" column),
+    // which the offers put at the top. Only offer rows: the first row.
+    is_offer_row(item) {
+      return !!item && (!!Number(item.posa_is_offer) || !!item.posa_is_replace);
+    },
+    first_cart_item() {
+      const items = (this.items || []).filter(Boolean);
+      return items.find((it) => !this.is_offer_row(it)) || items[0] || null;
+    },
+
     shortEditQty(e) {
       if (e.key === 'F2') {
         e.preventDefault();
-        this.$refs.qtyField.focus();
+        this.$refs.qtyField?.focus?.();
       }
     },
 
     shortPlussQty(e) {
       if (e.key === '-' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        this.subtract_one(this.items[0]);
+        const item = this.first_cart_item();
+        if (item) this.subtract_one(item);
       }
     },
 
     shortMinusQty(e) {
       if (e.key === '+' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        this.add_one(this.items[0]);
+        const item = this.first_cart_item();
+        if (item) this.add_one(item);
       }
     },
 
@@ -3910,8 +4060,8 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
     shortDeleteFirstItem(e) {
       if ((e.key === "d" || e.key === "D") && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        this.handleRemoveItem(this.items[0]);
-        //this.remove_item(this.items[0]);
+        const item = this.first_cart_item();
+        if (item) this.handleRemoveItem(item);
         evntBus.$emit('escEventTriggered');
       }
     },
@@ -3927,7 +4077,7 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
 
         // Restaurant Item Popup
         if (this.pos_profile.posa_item_popup_instead_expand) {
-          this.openItemDialog(this.items[0]);
+          this.openItemDialog(this.first_cart_item());
           return;
         }
 
@@ -3942,7 +4092,7 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
           if (this.$root) {
             evntBus.$emit('inputBlurTriggered');
           }
-          this.expanded.push(this.items[0]);
+          this.expanded.push(this.first_cart_item());
         }
       }
     },
@@ -3950,7 +4100,7 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
     shortSelectDiscount(e) {
       if ((e.key === "z" || e.key === "Z") && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        this.$refs.discount.focus();
+        this.$refs.discount?.focus?.();
       }
     },
 
@@ -3981,7 +4131,20 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
 
     handelOffers() {
       const offers = [];
+      // Offers already in this cart (also a held or draft sale that was
+      // resumed) keep their row id, so they are recognised as applied and
+      // never applied a second time.
+      const inCart = {};
+      (this.posa_offers || []).forEach((o) => (inCart[o.offer_name] = o));
       this.posOffers.forEach((offer) => {
+        const saved = inCart[offer.name];
+        if (saved) {
+          offer.row_id = saved.row_id;
+          offer.offer_applied = !!flt(saved.offer_applied === true ? 1 : saved.offer_applied);
+        } else {
+          delete offer.row_id;
+          delete offer.offer_applied;
+        }
         if (offer.apply_on === "Item Code") {
           const itemOffer = this.getItemOffer(offer);
           if (itemOffer) {
@@ -4017,8 +4180,11 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
           offer.apply_type == "Item Code" &&
           offer.replace_item
         ) {
-          offer.give_item = offer.item;
-          offer.apply_item_code = offer.item;
+          // The offer can list several items: give the one in the cart.
+          const base = this.getItemFromRowID((offer.items || [])[0]);
+          const giveCode = (base && base.item_code) || offer.item;
+          offer.give_item = giveCode;
+          offer.apply_item_code = giveCode;
         } else if (
           offer.apply_on == "Item Group" &&
           offer.apply_type == "Item Group" &&
@@ -4055,6 +4221,27 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
     getItemFromRowID(row_id) {
       const item = this.items.find((el) => el.posa_row_id == row_id);
       return item;
+    },
+
+    // Free quantity of a Give Product offer. With "Repeat For Every Min
+    // Quantity" it grows with the qualifying qty: min 10, given 1 gives
+    // 1 for 10-19, 2 for 20-29, 3 for 30-39 ... (capped by Max Free Qty).
+    offerGivenQty(offer) {
+      const given = Number(offer.given_qty) || 0;
+      if (
+        !Number(offer.is_recursive) ||
+        Number(offer.replace_item) ||
+        Number(offer.replace_cheapest_item)
+      ) {
+        return given;
+      }
+      const step = Number(offer.min_qty) || 0;
+      if (step <= 0) return given;
+      const times = Math.floor((Number(offer.qualify_qty) || 0) / step + 1e-9);
+      let qty = Math.max(times, 1) * given;
+      const cap = Number(offer.max_given_qty) || 0;
+      if (cap > 0) qty = Math.min(qty, cap);
+      return qty;
     },
 
     checkQtyAnountOffer(offer, qty, amount) {
@@ -4094,6 +4281,8 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
       let apply = false;
       if (!applys.includes(false)) {
         apply = true;
+        // the qty that qualified, for a repeating free product offer
+        offer.qualify_qty = qty;
       }
       const res = {
         apply: apply,
@@ -4123,9 +4312,12 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
       let apply_offer = null;
       if (offer.apply_on === "Item Code") {
         if (this.checkOfferCoupon(offer)) {
+          // Each listed item is checked on its own row (min / max qty and
+          // amount per row). A price offer goes on every row that qualifies;
+          // a free product offer keeps one base row, as before.
+          let items = [];
           this.items.forEach((item) => {
-            if (!item.posa_is_offer && item.item_code === offer.item) {
-              const items = [];
+            if (!item.posa_is_offer && offerMatchesItem(offer, item)) {
               if (
                 offer.offer === "Item Price" &&
                 item.posa_offer_applied &&
@@ -4138,6 +4330,7 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
                   item.stock_qty * item.price_list_rate
                 );
                 if (res.apply) {
+                  if (offer.offer === "Give Product") items = [];
                   items.push(item.posa_row_id);
                   offer.items = items;
                   apply_offer = offer;
@@ -4158,7 +4351,7 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
           let total_count = 0;
           let total_amount = 0;
           this.items.forEach((item) => {
-            if (!item.posa_is_offer && item.item_group === offer.item_group) {
+            if (!item.posa_is_offer && offerMatchesItem(offer, item)) {
               if (
                 offer.offer === "Item Price" &&
                 item.posa_offer_applied &&
@@ -4195,7 +4388,7 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
           let total_count = 0;
           let total_amount = 0;
           this.items.forEach((item) => {
-            if (!item.posa_is_offer && item.brand === offer.brand) {
+            if (!item.posa_is_offer && offerMatchesItem(offer, item)) {
               if (
                 offer.offer === "Item Price" &&
                 item.posa_offer_applied &&
@@ -4359,6 +4552,21 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
                 }
               }
             });
+          } else if (
+            existOffer.offer === "Give Product" &&
+            existOffer.give_item_row_id &&
+            Number(offer.is_recursive) &&
+            !Number(offer.replace_item) &&
+            !Number(offer.replace_cheapest_item)
+          ) {
+            // repeating free product: follow the qualifying qty
+            const freeRow = this.getItemFromRowID(existOffer.give_item_row_id);
+            const want = this.offerGivenQty(offer);
+            if (freeRow && want > 0 && Number(freeRow.qty) !== want) {
+              freeRow.qty = want;
+              this.calc_stock_qty(freeRow, want);
+              this.$forceUpdate();
+            }
           } else if (existOffer.offer === "Item Price") {
             this.ApplyOnPrice(offer);
           } else if (existOffer.offer === "Grand Total") {
@@ -4421,7 +4629,7 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
           offer.apply_type == "Item Code" &&
           offer.replace_item
         ) {
-          const item = this.ApplyOnGiveProduct(offer, offer.item);
+          const item = this.ApplyOnGiveProduct(offer, offer.give_item || offer.item);
           item.posa_is_replace = itemsRowID[0];
           const baseItem = this.items.find(
             (el) => el.posa_row_id == item.posa_is_replace
@@ -4464,8 +4672,9 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
           offer.give_item_row_id = item.posa_row_id;
         } else {
           const item = this.ApplyOnGiveProduct(offer);
-          this.items.unshift(item);
+          // free item not in this profile's catalogue: no empty cart row
           if (item) {
+            this.items.unshift(item);
             offer.give_item_row_id = item.posa_row_id;
           }
         }
@@ -4506,8 +4715,9 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
         return;
       }
       const new_item = { ...item };
-      new_item.qty = offer.given_qty;
-      new_item.stock_qty = offer.given_qty;
+      const givenQty = this.offerGivenQty(offer);
+      new_item.qty = givenQty;
+      new_item.stock_qty = givenQty;
       new_item.rate = offer.discount_type === "Rate" ? offer.rate : item.rate;
       new_item.discount_amount =
         offer.discount_type === "Discount Amount" ? offer.discount_amount : 0;
@@ -4552,7 +4762,12 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
       this.items.forEach((item) => {
         if (offer.items.includes(item.posa_row_id)) {
           const item_offers = JSON.parse(item.posa_offers);
-          if (!item_offers.includes(offer.row_id)) {
+          // Never stack the same offer twice on a row (the row may carry it
+          // under an older row id, e.g. a resumed sale).
+          if (
+            !item_offers.includes(offer.row_id) &&
+            !this.checkOfferIsAppley(item, offer)
+          ) {
             if (offer.discount_type === "Rate") {
               item.rate = offer.rate;
             } else if (offer.discount_type === "Discount Percentage") {
@@ -4575,17 +4790,28 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
             (el) => el.name == offer.offer_name
           );
           if (originalOffer) {
+            // The invoice's offer row has no amounts: use the POS Offer's.
             if (originalOffer.discount_type === "Rate") {
               item.rate = item.price_list_rate;
             } else if (originalOffer.discount_type === "Discount Percentage") {
-              item.discount_percentage -= offer.discount_percentage;
-              if (!item.discount_percentage) {
+              item.discount_percentage = this.flt(
+                flt(item.discount_percentage) - flt(originalOffer.discount_percentage),
+                this.float_precision
+              );
+              if (item.discount_percentage <= 0) {
                 item.discount_percentage = 0;
                 item.discount_amount = 0;
                 item.rate = item.price_list_rate;
               }
             } else if (originalOffer.discount_type === "Discount Amount") {
-              item.discount_amount -= offer.discount_amount;
+              item.discount_amount = this.flt(
+                flt(item.discount_amount) - flt(originalOffer.discount_amount),
+                this.currency_precision
+              );
+              if (item.discount_amount <= 0) {
+                item.discount_amount = 0;
+                item.rate = item.price_list_rate;
+              }
             }
             this.calc_item_price(item);
           }
@@ -4809,7 +5035,7 @@ if (item.posa_custom_rate && !buffet_rate_applied) {
     evntBus.$on("open_rfid_popup", this.showRFIDPopups);
     this.$nextTick(() => {
       if (this.$refs.cancelBtn) {
-        this.$refs.cancelBtn.focus();
+        this.$refs.cancelBtn?.focus?.();
       }
     });
     evntBus.$on("register_pos_profile", (data) => {
@@ -4981,8 +5207,10 @@ this.initCustomerDisplay();
   watch: {
 customerDisplayPayload: {
   deep: true,
-  handler() {
+  handler(payload) {
     this.broadcastDisplay();
+    // customer pole display (VFD), when enabled in the POS Profile
+    if (this.pos_profile && this.pos_profile.posa_enable_vfd) vfd.showCart(payload);
   },
 },
   pos_profile: {
@@ -5077,6 +5305,7 @@ customerDisplayPayload: {
       handler(items) {
         this.handelOffers();
         this.$forceUpdate();
+        this.highlight_changed_row();
       },
     },
     invoiceType() {
@@ -5411,8 +5640,8 @@ customerDisplayPayload: {
   z-index: 10;
 }
 
-/* Scoped styles don't reach Vuetify's inner badge element, so use ::v-deep */
-.notification-badge ::v-deep .v-badge__badge {
+/* Scoped styles don't reach Vuetify's inner badge element, so use :deep() */
+.notification-badge :deep(.v-badge__badge) {
   font-size: 14px;
   height: 20px;
   min-width: 20px;
@@ -5501,3 +5730,32 @@ customerDisplayPayload: {
 }
 </style>
 
+<style>
+/* Cart row just added or whose qty changed (not scoped: the rows are drawn
+   inside v-data-table). The flash plays once, the tint stays until the next
+   change. */
+.posa-cart-table tr.posa-row-changed > td {
+  background-color: #fff3c4 !important;
+  font-weight: 600;
+}
+.posa-cart-table tr.posa-row-changed > td:first-child {
+  box-shadow: inset 4px 0 0 #ff9800;
+}
+.posa-cart-table tr.posa-flash-a > td {
+  animation: posa-row-flash-a 1.2s ease-out;
+}
+.posa-cart-table tr.posa-flash-b > td {
+  animation: posa-row-flash-b 1.2s ease-out;
+}
+@keyframes posa-row-flash-a {
+  0%, 30% { background-color: #ffd54f; }
+  100% { background-color: #fff3c4; }
+}
+@keyframes posa-row-flash-b {
+  0%, 30% { background-color: #ffd54f; }
+  100% { background-color: #fff3c4; }
+}
+.v-theme--dark .posa-cart-table tr.posa-row-changed > td {
+  background-color: #5c4a12 !important;
+}
+</style>

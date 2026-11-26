@@ -1,0 +1,180 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-02-01 18:24:07.322828",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "doctype_select",
+  "column_break_7w6gf",
+  "permlevel",
+  "if_owner",
+  "section_break_hjreo",
+  "select",
+  "read",
+  "write",
+  "create",
+  "column_break_yfuo5",
+  "delete_check",
+  "submit_check",
+  "cancel_check",
+  "amend_check",
+  "column_break_vlzl2",
+  "print",
+  "email",
+  "report",
+  "column_break_qqxsx",
+  "import",
+  "export",
+  "set_user_permissions",
+  "share"
+ ],
+ "fields": [
+  {
+   "bold": 1,
+   "fieldname": "doctype_select",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "label": "Document Type",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "permlevel",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Level",
+   "options": "0\n1\n2\n3\n4\n5\n6\n7\n8\n9"
+  },
+  {
+   "fieldname": "column_break_7w6gf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_hjreo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "select",
+   "fieldtype": "Check",
+   "label": "Select"
+  },
+  {
+   "default": "0",
+   "fieldname": "read",
+   "fieldtype": "Check",
+   "label": "Read"
+  },
+  {
+   "default": "0",
+   "fieldname": "write",
+   "fieldtype": "Check",
+   "label": "Write"
+  },
+  {
+   "default": "0",
+   "fieldname": "create",
+   "fieldtype": "Check",
+   "label": "Create"
+  },
+  {
+   "fieldname": "column_break_yfuo5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "delete_check",
+   "fieldtype": "Check",
+   "label": "Delete"
+  },
+  {
+   "default": "0",
+   "fieldname": "submit_check",
+   "fieldtype": "Check",
+   "label": "Submit"
+  },
+  {
+   "default": "0",
+   "fieldname": "cancel_check",
+   "fieldtype": "Check",
+   "label": "Cancel"
+  },
+  {
+   "default": "0",
+   "fieldname": "amend_check",
+   "fieldtype": "Check",
+   "label": "Amend"
+  },
+  {
+   "fieldname": "column_break_vlzl2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "print",
+   "fieldtype": "Check",
+   "label": "Print"
+  },
+  {
+   "default": "0",
+   "fieldname": "email",
+   "fieldtype": "Check",
+   "label": "Email"
+  },
+  {
+   "default": "0",
+   "fieldname": "report",
+   "fieldtype": "Check",
+   "label": "Report"
+  },
+  {
+   "fieldname": "column_break_qqxsx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "import",
+   "fieldtype": "Check",
+   "label": "Import"
+  },
+  {
+   "default": "0",
+   "fieldname": "export",
+   "fieldtype": "Check",
+   "label": "Export"
+  },
+  {
+   "default": "0",
+   "fieldname": "set_user_permissions",
+   "fieldtype": "Check",
+   "label": "Set User Permissions "
+  },
+  {
+   "default": "0",
+   "fieldname": "share",
+   "fieldtype": "Check",
+   "label": "Share"
+  },
+  {
+   "default": "0",
+   "fieldname": "if_owner",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Only if Creator"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-02-01 19:36:03.425966",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "Document Type Permissions",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

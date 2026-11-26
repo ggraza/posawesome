@@ -85,7 +85,7 @@ export default {
   methods: {
     focus_input() {
       this.invoice_name = null;
-      this.$refs.invoice_name.focus();
+      this.$refs.invoice_name?.focus?.();
       console.log('Submited Invoice Focus');
     },
     back_to_invoice() {
@@ -124,7 +124,7 @@ export default {
         true
       );
       this.invoice_name = null;
-      this.$refs.invoice_name.focus();
+      this.$refs.invoice_name?.focus?.();
     },
 
 print_invoice(invoice) {
@@ -351,7 +351,7 @@ open_invoice_print(doc) {
 
   this.$nextTick(() => {
     if (this.$refs.invoice_name) {
-      this.$refs.invoice_name.focus();
+      this.$refs.invoice_name?.focus?.();
     }
   });
 },
@@ -374,7 +374,7 @@ open_invoice_print(doc) {
     shortcuts(e) {
       if ((e.key === 'h' || e.key === 'H') && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        this.$refs.invoice_name.focus();
+        this.$refs.invoice_name?.focus?.();
       }
     },
   },

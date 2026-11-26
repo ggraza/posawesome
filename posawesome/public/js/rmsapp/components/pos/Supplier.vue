@@ -66,7 +66,7 @@ export default {
 
   methods: {
     supplier_blur() {
-      this.$refs.supplierField.blur();
+      this.$refs.supplierField?.blur?.();
     },
     shortSupplier(e) {
       if (e.key === "s" || e.key === "S" && e.altKey) {
@@ -74,7 +74,7 @@ export default {
         if (this.$root) {
           evntBus.$emit('inputBlurTriggered');
         }
-        this.$refs.supplierField.focus();
+        this.$refs.supplierField?.focus?.();
       }
     },
     get_supplier_names() {
@@ -173,7 +173,7 @@ export default {
         if (this.$root) {
           evntBus.$emit('escEventTriggered');
         }
-        this.$refs.supplierField.blur();
+        this.$refs.supplierField?.blur?.();
       }
       evntBus.$emit('update_supplier', this.supplier);
     },

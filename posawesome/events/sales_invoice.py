@@ -49,7 +49,8 @@ def generate_fbr_barcode(code=None, docname=None):
         frappe.log_error(f"Error in generate_fbr_barcode: {frappe.get_traceback()}")
         frappe.throw("Failed to generate FBR barcode. Check error logs.")
 
-@frappe.whitelist()
+# Older copy of submit_to_fbr (v14 had both under the same name; the one below won).
+# Not called anywhere and not exposed over HTTP.
 def _submit_to_fbr_legacy(doctype=None, name=None):
     if not doctype or not name:
         frappe.throw("doctype and name are required")
@@ -147,14 +148,29 @@ def _submit_to_fbr_legacy(doctype=None, name=None):
 
 @frappe.whitelist()
 def submit_to_fbr(doctype=None, name=None):
-    # Works both as a whitelisted call (doctype, name) and as a doc_event hook
-    # (doc, method) - the v14 hook passed the Document positionally.
+    # An invoice goes to FBR only when it is printed: the POS calls this just
+    # before printing (Submit & Print, Print Last Invoice, exchange prints) and
+    # the offline sync calls it for sales whose receipt was printed. Submitting
+    # alone no longer sends anything (the v14 on_submit hook is removed).
+    # Still accepts a Document as first argument (old hook signature).
     if isinstance(doctype, Document):
         doc = doctype
     else:
         if not doctype or not name:
             frappe.throw("doctype and name are required")
+        # Reprints and a double click must not create a second FBR invoice:
+        # lock the row, and stop when it already has its FBR number.
+        existing = frappe.db.get_value(doctype, name, ["fbr_invoice_no", "docstatus"], as_dict=True, for_update=True)
+        if not existing:
+            frappe.throw(f"{doctype} {name} not found")
+        if existing.fbr_invoice_no:
+            return {"status": "exists", "invoice_number": existing.fbr_invoice_no}
+        if existing.docstatus == 2:
+            return {"status": "skipped", "reason": "cancelled"}
         doc = frappe.get_doc(doctype, name)
+
+    if doc.get("fbr_invoice_no"):
+        return {"status": "exists", "invoice_number": doc.fbr_invoice_no}
 
     if not doc.get("custom_allow_fbr_on_submit"):
         frappe.log_error(f"Invoice {doc.name} skipped FBR submission: custom_allow_fbr_on_submit is not enabled", "FBR Integration Skip")

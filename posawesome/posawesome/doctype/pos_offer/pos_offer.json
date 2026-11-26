@@ -16,6 +16,7 @@
   "section_break_3",
   "apply_on",
   "offer",
+  "discount_category",
   "company",
   "pos_profile",
   "warehouse",
@@ -27,6 +28,16 @@
   "valid_upto",
   "coupon_based",
   "auto",
+  "offer_items_section",
+  "buying_price_list",
+  "mrp_price_list",
+  "column_break_price_lists",
+  "sale_price_list",
+  "show_item_details",
+  "offer_items_list_section",
+  "offer_items",
+  "offer_item_groups",
+  "offer_brands",
   "quantity_and_amount_section",
   "min_qty",
   "max_qty",
@@ -43,6 +54,8 @@
   "less_then",
   "product_discount_scheme_section",
   "given_qty",
+  "is_recursive",
+  "max_given_qty",
   "price_discount_scheme_section",
   "discount_type",
   "column_break_26",
@@ -51,7 +64,9 @@
   "discount_percentage",
   "loyalty_point_scheme_section",
   "loyalty_program",
-  "loyalty_points"
+  "loyalty_points",
+  "help_tab",
+  "pos_offer_help"
  ],
  "fields": [
   {
@@ -118,16 +133,40 @@
    "options": "Item"
   },
   {
+   "depends_on": "eval:doc.apply_on=='Item Code'",
+   "description": "The offer applies to every item in this list.",
+   "fieldname": "offer_items",
+   "fieldtype": "Table",
+   "label": "Apply Rule On Item Codes",
+   "options": "POS Offer Item"
+  },
+  {
    "fieldname": "item_group",
    "fieldtype": "Link",
    "label": "Apply Rule On Item Group",
    "options": "Item Group"
   },
   {
+   "depends_on": "eval:doc.apply_on=='Item Group'",
+   "description": "The offer applies to every item group in this list.",
+   "fieldname": "offer_item_groups",
+   "fieldtype": "Table",
+   "label": "Apply Rule On Item Groups",
+   "options": "POS Offer Item Group"
+  },
+  {
    "fieldname": "brand",
    "fieldtype": "Link",
    "label": "Apply Rule On Brand",
    "options": "Brand"
+  },
+  {
+   "depends_on": "eval:doc.apply_on=='Brand'",
+   "description": "The offer applies to every brand in this list.",
+   "fieldname": "offer_brands",
+   "fieldtype": "Table",
+   "label": "Apply Rule On Brands",
+   "options": "POS Offer Brand"
   },
   {
    "default": "0",
@@ -251,6 +290,22 @@
    "label": "Given Quantity"
   },
   {
+   "default": "0",
+   "depends_on": "eval:doc.offer=='Give Product' && !doc.replace_item && !doc.replace_cheapest_item",
+   "description": "Buy 10 get 1, buy 20 get 2, buy 30 get 3 ... Free quantity = Given Quantity for every full Min Quantity.",
+   "fieldname": "is_recursive",
+   "fieldtype": "Check",
+   "label": "Repeat For Every Min Quantity"
+  },
+  {
+   "depends_on": "eval:doc.offer=='Give Product' && doc.is_recursive",
+   "description": "Upper limit of free quantity per invoice. 0 = no limit.",
+   "fieldname": "max_given_qty",
+   "fieldtype": "Float",
+   "label": "Max Free Quantity",
+   "non_negative": 1
+  },
+  {
    "fieldname": "quantity_and_amount_section",
    "fieldtype": "Section Break",
    "label": "Quantity and Amount Conditions"
@@ -306,11 +361,67 @@
    "fieldname": "coupon_based",
    "fieldtype": "Check",
    "label": "Coupon Code Based"
+  },
+  {
+   "fieldname": "discount_category",
+   "fieldtype": "Select",
+   "label": "Discount Category",
+   "options": "\nSeasonal\nQuantity Base\nStock Clearance\nHappy Hours",
+   "description": "For information only; not used by the POS."
+  },
+  {
+   "fieldname": "offer_items_section",
+   "fieldtype": "Section Break",
+   "label": "Items",
+   "depends_on": "eval:['Item Code','Item Group','Brand'].includes(doc.apply_on)"
+  },
+  {
+   "fieldname": "buying_price_list",
+   "fieldtype": "Link",
+   "label": "Current TP Price List",
+   "options": "Price List",
+   "description": "Buying price list for the Current TP column."
+  },
+  {
+   "fieldname": "mrp_price_list",
+   "fieldtype": "Link",
+   "label": "MRP Price List",
+   "options": "Price List"
+  },
+  {
+   "fieldname": "column_break_price_lists",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sale_price_list",
+   "fieldtype": "Link",
+   "label": "Sale Price List",
+   "options": "Price List"
+  },
+  {
+   "fieldname": "show_item_details",
+   "fieldtype": "Button",
+   "label": "Show Item Details"
+  },
+  {
+   "fieldname": "offer_items_list_section",
+   "fieldtype": "Section Break",
+   "depends_on": "eval:['Item Code','Item Group','Brand'].includes(doc.apply_on)"
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "pos_offer_help",
+   "fieldtype": "HTML",
+   "label": "POS Offer Help"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-03-12 21:36:44.692126",
+ "modified": "2026-11-26 05:00:00.000000",
  "modified_by": "Administrator",
  "module": "POSAwesome",
  "name": "POS Offer",

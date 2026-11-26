@@ -733,6 +733,57 @@
                 ({{ price_check_result.saved_percent.toFixed(1) }}%)
               </span>
             </v-alert>
+
+            <div v-if="(price_check_result.offers || []).length" class="mt-3">
+              <div class="text-subtitle-2 mb-1">
+                <v-icon size="small" color="orange-darken-2">mdi-tag-multiple</v-icon>
+                {{ __('Offers') }} ({{ price_check_result.offers.length }})
+              </div>
+              <div
+                v-for="o in price_check_result.offers"
+                :key="o.name"
+                class="pc-offer pa-2 mb-2"
+              >
+                <div class="d-flex align-center">
+                  <span class="font-weight-bold">{{ o.title }}</span>
+                  <v-spacer></v-spacer>
+                  <v-chip v-if="o.discount_category" size="x-small" color="orange-darken-2" variant="tonal" class="ml-1">
+                    {{ __(o.discount_category) }}
+                  </v-chip>
+                  <v-chip v-if="o.coupon_based" size="x-small" color="purple" variant="tonal" class="ml-1">
+                    {{ __('Coupon') }}
+                  </v-chip>
+                </div>
+                <div>{{ pc_offer_text(o, price_check_result.currency) }}</div>
+                <div v-if="o.offer_price !== null && o.offer_price !== undefined" class="mt-1">
+                  {{ __('Offer Price') }}:
+                  <span class="font-weight-bold text-success text-subtitle-1">
+                    {{ currencySymbol(price_check_result.currency) }}
+                    {{ formtCurrency(o.offer_price) }}
+                  </span>
+                  <span v-if="o.offer_discount > 0" class="text-grey text-caption">
+                    ({{ __('save') }} {{ currencySymbol(price_check_result.currency) }}
+                    {{ formtCurrency(o.offer_discount) }} {{ __('more') }})
+                  </span>
+                </div>
+                <div class="text-caption text-grey">
+                  <span v-if="pc_offer_condition(o, price_check_result.currency)">
+                    {{ pc_offer_condition(o, price_check_result.currency) }}
+                  </span>
+                  <span v-if="o.valid_upto">
+                    <span v-if="pc_offer_condition(o, price_check_result.currency)"> · </span>{{ __('Valid until') }} {{ pc_date(o.valid_upto) }}
+                  </span>
+                </div>
+                <div v-if="o.description" class="text-caption">{{ o.description }}</div>
+              </div>
+            </div>
+            <div v-else-if="Array.isArray(price_check_result.offers)" class="text-caption text-grey text-center mt-3">
+              {{ __('No offers on this item') }}
+            </div>
+            <div v-else class="text-caption text-warning text-center mt-3">
+              <!-- the server did not send offers: posapp.py on the server is older than this screen -->
+              {{ __('Offers not available: the server is not updated (copy posapp.py, then bench restart)') }}
+            </div>
           </div>
         </v-card-text>
       </v-card>
@@ -748,10 +799,12 @@ import _ from '../../../shared/debounce';
 import { markRaw } from 'vue';
 import offlinePos, { offlineState } from '../../../offline';
 import { parseScaleBarcode, scaleConfig } from '../../../offline/scale';
+import { priceCheckOffers } from '../../../offline/offer_targets';
 export default {
   mixins: [format],
   data() {
     return {
+    external_scan: null, // scan handler of an open dialog (item exchange)
       pos_profile: '',
       flags: {},
       items_view: 'list',
@@ -794,7 +847,7 @@ export default {
         this.price_check_result = null;
         this.price_check_error = '';
         this.$nextTick(() => {
-          if (this.$refs.debounce_search) this.$refs.debounce_search.focus();
+          this.search_box("focus");
         });
       }
     },
@@ -863,6 +916,44 @@ export default {
         if (input) input.select();
       }
     },
+    pc_offer_text(o, currency) {
+      const sym = this.currencySymbol(currency) + ' ';
+      const money = (v) => sym + this.formtCurrency(v);
+      let what = '';
+      if (o.offer === 'Give Product') {
+        const qty = o.given_qty || 1;
+        what = __('Free {0} x {1}', [qty, o.give_item || __('item')]);
+        if (Number(o.is_recursive) && o.min_qty > 0) {
+          what = __('Buy {0} get {1} free, buy {2} get {3} ...', [o.min_qty, qty, o.min_qty * 2, qty * 2]) +
+            (o.give_item ? ' (' + o.give_item + ')' : '');
+        }
+      } else if (o.discount_type === 'Discount Percentage' && o.discount_percentage) {
+        what = __('{0}% off', [o.discount_percentage]);
+      } else if (o.discount_type === 'Discount Amount' && o.discount_amount) {
+        what = __('{0} off', [money(o.discount_amount)]);
+      } else if (o.discount_type === 'Rate' && o.rate) {
+        what = __('Special price {0}', [money(o.rate)]);
+      }
+      if (o.offer === 'Grand Total' || o.apply_on === 'Transaction') {
+        what = what ? __('{0} on the total bill', [what]) : __('On the total bill');
+      }
+      return what;
+    },
+    pc_date(d) {
+      try {
+        return frappe.datetime.str_to_user(d);
+      } catch (e) {
+        return d;
+      }
+    },
+    pc_offer_condition(o, currency) {
+      const sym = this.currencySymbol(currency) + ' ';
+      const parts = [];
+      if (o.min_qty) parts.push(__('Buy {0} or more', [o.min_qty]));
+      if (o.max_qty) parts.push(__('up to {0}', [o.max_qty]));
+      if (o.min_amt) parts.push(__('Bill of {0} or more', [sym + this.formtCurrency(o.min_amt)]));
+      return parts.length ? parts.join(', ') + '.' : '';
+    },
     lookup_price_check() {
       const code = (this.price_check_barcode || '').trim();
       if (!code) return;
@@ -877,10 +968,16 @@ export default {
         const mrp = Number(row.maximum_retail_price) || 0;
         const selling = Number(row.rate) || 0;
         const saved = mrp && selling && mrp > selling ? mrp - selling : 0;
+        const boot = offlinePos.catalog.getMeta('bootstrap') || {};
+        const full = offlinePos.catalog.getItem(row.item_code) || {};
+        const pc_item = { ...full, ...row, item_group: row.item_group || full.item_group, brand: row.brand || full.brand };
         vm.price_check_result = {
           item_code: row.item_code, item_name: row.item_name, uom: row.uom || row.stock_uom, image: row.image,
           currency: row.currency || vm.pos_profile.currency, mrp_rate: mrp, selling_rate: selling,
           saved, saved_percent: mrp && saved ? (saved / mrp) * 100 : 0,
+          // offers kept on this terminal, same rules as the server
+          offers: priceCheckOffers(boot.offers || [], pc_item, selling,
+            (code) => (offlinePos.catalog.getItem(code) || {}).item_name),
         };
         vm.price_check_error = '';
         vm.$nextTick(() => vm.focus_price_check());
@@ -961,13 +1058,13 @@ row_class(item) {
   return sel && sel.item_code === item.item_code ? "posa-row-selected" : "";
 },
 
-enter_or_select() {
+enter_or_select(event) {
   const item = this.nav_items[this.selected_index];
   if (this.selected_index >= 0 && item) {
     this.add_item(item);
     return;
   }
-  this.search_onchange();
+  this.search_onchange(event);
 },
 
     selectAllText(event) {
@@ -977,7 +1074,7 @@ enter_or_select() {
 focusQtyField() {
   this.$nextTick(() => {
     if (this.$refs.qty_input) {
-      this.$refs.qty_input.focus();
+      this.$refs.qty_input?.focus?.();
     }
   });
 },
@@ -1016,9 +1113,9 @@ selectItem(item) {
 
   this.$nextTick(() => {
     if (this.$refs.uom_input) {
-      this.$refs.uom_input.focus();
+      this.$refs.uom_input?.focus?.();
     } else {
-      this.$refs.rate_input.focus();
+      this.$refs.rate_input?.focus?.();
       // this.$refs.qty_input.focus();
     }
   });
@@ -1116,7 +1213,7 @@ onUOMEnterEvnt(e) {
   this.onUOMChange(this.selectedUOM);
 
   if (this.$refs.uom_input) {
-    this.$refs.uom_input.blur();
+    this.$refs.uom_input?.blur?.();
 
     // close menu
     this.$refs.uom_input.menu = false;
@@ -1128,7 +1225,7 @@ onUOMEnterEvnt(e) {
   this.$nextTick(() => {
     setTimeout(() => {
       if (this.$refs.rate_input) {
-        this.$refs.rate_input.focus();
+        this.$refs.rate_input?.focus?.();
       }
     }, 50);
   });
@@ -1139,7 +1236,7 @@ onUOMEnterEvnt_old() {
   // force menu close
   this.$refs.uom_input.menu = false;
   this.$nextTick(() => {
-    this.$refs.qty_input.focus();
+    this.$refs.qty_input?.focus?.();
   });
 },
 addSelectedItem() {
@@ -1187,7 +1284,7 @@ addSelectedItem() {
 },
     uom_input_blur() {
       if (this.$refs.uom_input) {
-        this.$refs.uom_input.blur();
+        this.$refs.uom_input?.blur?.();
         this.$refs.uom_input.menu = false;
       }
     },
@@ -1197,7 +1294,7 @@ addSelectedItem() {
       this.selectedItemCode = item; // Update the search field with the selected item's name
       this.input_blur();
       this.$nextTick(() => {
-        this.$refs.qty_input.focus();
+        this.$refs.qty_input?.focus?.();
       });
     },
     addSelectedItem_qty() {
@@ -1253,7 +1350,7 @@ addSelectedItem() {
     },
 
     input_blur() {
-      this.$refs.debounce_search.blur();
+      this.search_box("blur");
     },
     customFilter(item, queryText, itemText) {
       const lowercaseQuery = queryText.toLowerCase();
@@ -1291,7 +1388,7 @@ addSelectedItem() {
           evntBus.$emit('customerBlurTriggered');
           evntBus.$emit('discountBlurTriggered');
         }
-        this.$refs.debounce_search.focus();
+        this.search_box("focus");
       }
     },
     handleAltF_old(e) {
@@ -1301,7 +1398,7 @@ addSelectedItem() {
           evntBus.$emit('customerBlurTriggered');
           evntBus.$emit('discountBlurTriggered');
         }
-        this.$refs.debounce_search.focus();
+        this.search_box("focus");
       }
     },
     show_offers() {
@@ -1469,31 +1566,53 @@ addSelectedItem() {
         this.qty = 1;
         this.esc_event();
         this.first_search = '';
-        this.$refs.debounce_search.model = null;
+        if (this.$refs.debounce_search) this.$refs.debounce_search.model = null;
         this.$nextTick(() => {
-          this.$refs.debounce_search.focus();
+          this.search_box("focus");
         });
       }
+    },
+    // An item added from the search box by Enter: onScan.js sees the same
+    // keystrokes and reports the code a moment later; do not add it twice.
+    // Empty the search box after an item was added. "" (not null): when the
+    // text was typed and Enter pressed in the same moment, first_search goes
+    // null -> text -> null within one tick and the field would keep the text.
+    clear_search_box() {
+      this.search = null;
+      this.first_search = '';
+      this.debounce_search = null;
+    },
+    mark_enter_added(code) {
+      this._enter_added = { code: String(code || '').trim(), at: Date.now() };
+    },
+    added_by_enter(code) {
+      const e = this._enter_added;
+      return !!(e && e.code === String(code || '').trim() && Date.now() - e.at < 2500);
     },
     enter_event() {
       let match = false;
       if (!this.first_search) {
         return;
       }
+      const entered = this.first_search;
       // barcode / scale barcode / item code straight from the local index
       if (offlinePos.useLocalCatalog() && !this.pos_profile.pose_use_limit_search) {
-        const scanned = offlinePos.scan(this.first_search, { priceList: this.customer_price_list });
+        let scanned = offlinePos.scan(this.first_search, { priceList: this.customer_price_list });
+        if (!scanned && !parseScaleBarcode(this.first_search, scaleConfig(this.pos_profile))) {
+          // words of the name / code: a single result is added by Enter
+          const found = offlinePos.searchItems(this.first_search, { limit: 2, priceList: this.customer_price_list });
+          if (found.length === 1) scanned = { ...found[0] };
+        }
         if (scanned) {
           if (!scanned.posa_scale_barcode) scanned.qty = Math.abs(this.qty) || 1;
           if (this.pos_profile.posa_sales_person && this.sales_person) {
             scanned.posa_sales_person = this.sales_person;
           }
+          this.mark_enter_added(entered);
           this.add_item(scanned);
-          this.search = null;
-          this.first_search = null;
-          this.debounce_search = null;
+          this.clear_search_box();
           this.qty = 1;
-          this.$refs.debounce_search.focus();
+          this.search_box("focus");
           return;
         }
       }
@@ -1548,24 +1667,36 @@ addSelectedItem() {
       if (this.flags.batch_no) {
         new_item.to_set_batch_no = this.flags.batch_no;
       }
+      // name/code word search with a single result: Enter adds it (only when
+      // the list shown was searched with exactly what was typed)
+      if (!match && !scale && this.filtred_items.length === 1 && this.search === this.first_search) {
+        match = true;
+      }
       if (match) {
+        this.mark_enter_added(entered);
         // ?? Inject sales person into item
         if (this.pos_profile.posa_sales_person && this.sales_person) {
           new_item.posa_sales_person = this.sales_person;
         }
         this.add_item(new_item);
-        this.search = null;
-        this.first_search = null;
-        this.debounce_search = null;
+        this.clear_search_box();
         this.flags.serial_no = null;
         this.flags.batch_no = null;
         this.qty = 1;
-        this.$refs.debounce_search.focus();
+        this.search_box("focus");
       }
     },
-    search_onchange() {
-      console.log('Enter key pressed');
+    search_onchange(event) {
       const vm = this;
+      // The search box writes first_search through a 200 ms debounce. A scanner
+      // or a fast typist presses Enter within a few ms: read the box itself,
+      // otherwise Enter searches the previous text.
+      const typed = event && event.target && typeof event.target.value === 'string' ? event.target.value : undefined;
+      if (typed !== undefined && typed.trim() && typed !== (vm.first_search || '')) {
+        const setter = vm.$options.computed.debounce_search.set;
+        if (setter && setter.cancel) setter.cancel();
+        vm.first_search = typed;
+      }
       if (vm.pos_profile.pose_use_limit_search) {
         vm.get_items();
       } else {
@@ -1585,12 +1716,39 @@ addSelectedItem() {
       return scale ? scale.itemPart : first_search;
     },
 
+    // The item search box (4 layouts, one rendered at a time; none while the
+    // item panel is hidden). Never throws when it is not on screen.
+    search_box(action) {
+      let el = this.$refs.debounce_search;
+      if (Array.isArray(el)) el = el[0];
+      if (el && typeof el[action] === "function") el[action]();
+    },
+    // Focus the item search box once the item panel is visible again (it is
+    // hidden with v-show while another screen is open), with its text selected.
+    focus_search_when_visible(tries = 15) {
+      let ref = this.$refs.debounce_search;
+      if (Array.isArray(ref)) ref = ref[0];
+      const el = ref && ref.$el;
+      const input = el && el.querySelector ? el.querySelector("input") : null;
+      if (!input || !input.offsetParent) {
+        if (tries > 0) setTimeout(() => this.focus_search_when_visible(tries - 1), 50);
+        return;
+      }
+      // a dialog opened meanwhile (e.g. new invoice question): leave its focus alone
+      if (document.querySelector(".v-overlay--active .v-dialog, .v-dialog.v-overlay--active")) return;
+      input.focus();
+      try {
+        input.select();
+      } catch (e) {
+        /* not selectable */
+      }
+    },
     esc_event() {
       this.search = null;
       this.first_search = null;
       this.qty = 1;
       this.selected_index = -1;
-      this.$refs.debounce_search.focus();
+      this.search_box("focus");
       console.log('Escape key pressed');
       if (this.pos_profile.posa_mandatory_select_uom) {
         this.selectedItem = null;
@@ -1622,11 +1780,15 @@ addSelectedItem() {
               const updated_item = r.message.find(
                 (element) => element.item_code == item.item_code
               );
+              if (!updated_item) return;
               item.actual_qty = updated_item.actual_qty;
               item.serial_no_data = updated_item.serial_no_data;
               item.batch_no_data = updated_item.batch_no_data;
               item.item_uoms = updated_item.item_uoms;
             });
+            // vm.items is markRaw (30k rows): Vue does not see the changes
+            // above, so hand it a new array to redraw the list.
+            vm.items = markRaw(vm.items.slice());
           }
         },
       });
@@ -1651,6 +1813,12 @@ addSelectedItem() {
     },
     trigger_onscan(sCode) {
       if (this.price_check_dialog) return; // price check popup handles its own scans
+      if (this.external_scan) {
+        // another dialog (item exchange) is open and takes the scans
+        this.external_scan(sCode);
+        return;
+      }
+      if (this.added_by_enter(sCode)) return; // the Enter key in the search box added it already
       if (offlinePos.useLocalCatalog() && !this.pos_profile.pose_use_limit_search) {
         const scanned = offlinePos.scan(sCode, { priceList: this.customer_price_list });
         if (scanned) {
@@ -1826,6 +1994,15 @@ addSelectedItem() {
     evntBus.$on('inputBlurTriggered', this.input_blur);
     evntBus.$on('UominputBlurTriggered', this.uom_input_blur);
     evntBus.$on('escEventTriggered', this.esc_event);
+    // a dialog that takes the barcode scans while it is open (null: back to the cart)
+    evntBus.$on('set_scan_handler', (fn) => {
+      this.external_scan = typeof fn === 'function' ? fn : null;
+    });
+    // Back from the payment screen (Submit, Submit & Print, Cancel, Esc):
+    // cursor back in the item search box.
+    evntBus.$on('show_payment', (data) => {
+      if (data === 'false' || data === false) this.focus_search_when_visible();
+    });
     document.addEventListener("keydown", this.handleAltF);
     this.$nextTick(function () {
       evntBus.$on('set_items_view', (view) => {
@@ -1873,6 +2050,11 @@ addSelectedItem() {
 </style>
 
 <style scoped>
+.pc-offer {
+  border: 1px dashed #fb8c00;
+  border-radius: 6px;
+  background: rgba(251, 140, 0, 0.06);
+}
 .enhanced-table-compact :deep(tr.posa-row-selected),
 .enhanced-table-compact :deep(tr.posa-row-selected td) {
   background-color: rgba(25, 118, 210, 0.18) !important;

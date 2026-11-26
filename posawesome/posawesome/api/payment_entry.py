@@ -274,6 +274,7 @@ def create_payment_entry(
     pe.set_missing_values()
 
     if party_account and bank:
+        _set_exchange_rates(pe)
         pe.set_amounts()
 
     # ---------------------------------------------------------
@@ -288,6 +289,19 @@ def create_payment_entry(
     )
 
     return pe
+
+def _set_exchange_rates(pe):
+    """ERPNext v16 set_amounts() divides by source_exchange_rate (Receive) or
+    target_exchange_rate (Pay); those are only filled in validate(), which runs
+    after set_amounts() here. Set them first (1 for company-currency accounts)."""
+    pe.set_exchange_rate()
+    if not flt(pe.source_exchange_rate):
+        pe.source_exchange_rate = 1
+    if not flt(pe.target_exchange_rate):
+        pe.target_exchange_rate = pe.source_exchange_rate if (
+            pe.paid_from_account_currency == pe.paid_to_account_currency
+        ) else 1
+
 
 def create_payment_entry_old(
     company,
@@ -353,6 +367,7 @@ def create_payment_entry_old(
     pe.set_missing_values()
 
     if party_account and bank:
+        _set_exchange_rates(pe)
         pe.set_amounts()
     if submit:
         pe.docstatus = 1

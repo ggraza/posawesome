@@ -9,6 +9,9 @@
   "payment_entry",
   "posting_date",
   "column_break_3",
+  "payment_type",
+  "party_type",
+  "party",
   "customer",
   "paid_amount",
   "mode_of_payment"
@@ -38,11 +41,10 @@
    "fetch_from": "pos_invoice.customer",
    "fieldname": "customer",
    "fieldtype": "Link",
-   "in_list_view": 1,
    "label": "Customer",
    "options": "Customer",
    "read_only": 1,
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fetch_from": "pos_invoice.grand_total",
@@ -50,18 +52,41 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Amount",
-   "reqd": 1
+   "reqd": 1,
+   "description": "Negative when the money was paid out of the till."
   },
   {
    "fieldname": "mode_of_payment",
    "fieldtype": "Data",
    "label": "Mode Of Payment",
    "reqd": 1
+  },
+  {
+   "fieldname": "payment_type",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Payment Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "party_type",
+   "fieldtype": "Link",
+   "label": "Party Type",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Party",
+   "options": "party_type",
+   "read_only": 1
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2023-06-12 02:59:56.133380",
+ "modified": "2026-11-22 01:10:00.000000",
  "modified_by": "Administrator",
  "module": "POSAwesome",
  "name": "POS Payment Entry Reference",
