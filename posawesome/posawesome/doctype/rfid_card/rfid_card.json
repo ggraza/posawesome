@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "field:rfid_number",
+ "creation": "2024-12-02 12:08:45.998158",
+ "default_view": "List",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "rfid_number",
+  "disabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "naming_series",
+   "options": ".rfid_number."
+  },
+  {
+   "fieldname": "rfid_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "RFID Card",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled"
+  }
+ ],
+ "icon": "fa fa-credit-card",
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "group": "POS Profile",
+   "link_doctype": "POS Profile",
+   "link_fieldname": "custom_rfid_number"
+  },
+  {
+   "group": "Sales Invoice Item c",
+   "is_child_table": 1,
+   "link_doctype": "Sales Invoice Item",
+   "link_fieldname": "custom_rfid_no",
+   "parent_doctype": "Sales Invoice",
+   "table_fieldname": "custom_rfid_card"
+  }
+ ],
+ "modified": "2025-03-13 00:26:18.221883",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "RFID Card",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  }
+ ],
+ "quick_entry": 1,
+ "show_name_in_global_search": 1,
+ "sort_field": "modified",
+ "sort_order": "ASC",
+ "states": []
+}

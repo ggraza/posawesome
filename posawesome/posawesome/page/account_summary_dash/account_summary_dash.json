@@ -1,0 +1,26 @@
+{
+ "content": null,
+ "creation": "2025-05-24 02:19:34.465186",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2025-05-24 02:19:34.465186",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "account_summary_dash",
+ "owner": "Administrator",
+ "page_name": "account_summary_dash",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Accounts Manager"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Account Summary"
+}

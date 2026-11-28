@@ -1,0 +1,9 @@
+posawesome/public/dist/
+node_modules/
+__pycache__/
+*.pyc
+posawesome/public/node_modules
+node_modules
+*.egg-info/
+DEPLOY_*.txt
+.DS_Store

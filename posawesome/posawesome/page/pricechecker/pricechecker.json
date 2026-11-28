@@ -1,0 +1,35 @@
+{
+ "content": null,
+ "creation": "2024-09-01 18:55:44.061277",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2024-09-01 18:55:44.061277",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "pricechecker",
+ "owner": "Administrator",
+ "page_name": "pricechecker",
+ "roles": [
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "Sales Manager"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Accounts Manager"
+  },
+  {
+   "role": "Accounts User"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "G2 Price Checker"
+}

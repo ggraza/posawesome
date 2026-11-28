@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customer Display</title>
+<style>
+  :root {
+    --ink: #16202b;
+    --ink-soft: #5b6673;
+    --paper: #f6f7f4;
+    --panel: #ffffff;
+    --line: #dfe3dc;
+    --accent: #0b7a68;
+    --accent-ink: #ffffff;
+    --saving: #b4501e;
+    --font: "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font);
+    color: var(--ink);
+    background: var(--paper);
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+  }
+
+  /* ---------- idle ---------- */
+  #idle {
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: var(--ink);
+    color: #fff;
+    padding: 4vw;
+  }
+  #idle h1 { font-size: clamp(40px, 7vw, 110px); font-weight: 300; letter-spacing: -0.02em; }
+  #idle p { margin-top: 1.2vw; font-size: clamp(18px, 2.2vw, 34px); color: #b9c4cf; }
+
+  /* ---------- active ---------- */
+  #live { height: 100%; display: none; grid-template-columns: 1.7fr 1fr; }
+
+  .lines { display: flex; flex-direction: column; min-height: 0; padding: 2.2vw 2.6vw 0; }
+  .lines-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-bottom: 1.2vw; border-bottom: 2px solid var(--ink);
+    font-size: clamp(14px, 1.4vw, 22px); color: var(--ink-soft);
+  }
+  .lines-head b { color: var(--ink); font-size: clamp(18px, 1.9vw, 30px); font-weight: 600; }
+  #list { flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+  .row {
+    display: grid; grid-template-columns: 4.2ch 1fr auto; gap: 1.2vw;
+    padding: 1.1vw 0; border-bottom: 1px solid var(--line);
+    font-size: clamp(18px, 2.1vw, 34px);
+  }
+  .row .qty { color: var(--accent); font-weight: 700; }
+  .row .name { font-weight: 500; }
+  .row .meta { display: block; margin-top: .25em; font-size: .62em; color: var(--ink-soft); font-weight: 400; }
+  .row .meta.off { color: var(--saving); }
+  .row .amt { font-weight: 600; text-align: right; }
+  .row.fresh { animation: flash 1.1s ease-out; }
+  @keyframes flash { from { background: #dff2ec; } to { background: transparent; } }
+  @media (prefers-reduced-motion: reduce) { .row.fresh { animation: none; } #list { scroll-behavior: auto; } }
+
+  .side {
+    background: var(--panel); border-left: 1px solid var(--line);
+    display: flex; flex-direction: column; padding: 2.2vw 2.4vw;
+  }
+  .ctx { font-size: clamp(14px, 1.5vw, 24px); color: var(--ink-soft); line-height: 1.7; }
+  .ctx strong { color: var(--ink); font-weight: 600; }
+  .sums { margin-top: auto; }
+  .sum {
+    display: flex; justify-content: space-between;
+    font-size: clamp(16px, 1.8vw, 28px); padding: .5vw 0; color: var(--ink-soft);
+  }
+  .sum span:last-child { color: var(--ink); font-weight: 500; }
+  .sum.saving span:last-child { color: var(--saving); }
+  .total {
+    margin-top: 1.2vw; padding: 1.6vw 1.8vw; border-radius: 6px;
+    background: var(--accent); color: var(--accent-ink);
+  }
+  .total small { display: block; font-size: clamp(14px, 1.5vw, 24px); opacity: .85; }
+  .total .n { font-size: clamp(44px, 6.4vw, 104px); font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; }
+  .total .cur { font-size: .4em; font-weight: 500; margin-right: .3em; opacity: .85; }
+  #banner {
+    display: none; margin-top: 1vw; padding: 1vw 1.4vw; border: 2px solid var(--accent);
+    color: var(--accent); border-radius: 6px; font-size: clamp(16px, 1.8vw, 28px); font-weight: 600; text-align: center;
+  }
+
+  #status {
+    position: fixed; right: 10px; bottom: 6px; font-size: 12px; color: #98a2ad; z-index: 5;
+  }
+
+  @media (max-width: 800px) {
+    #live { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+    .side { border-left: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+
+<section id="idle">
+  <h1>Welcome</h1>
+  <p>Your order will appear here</p>
+</section>
+
+<main id="live">
+  <section class="lines">
+    <div class="lines-head"><b>Your order</b><span id="qtyCount"></span></div>
+    <div id="list"></div>
+  </section>
+  <aside class="side">
+    <div class="ctx" id="ctx"></div>
+    <div class="sums">
+      <div class="sum"><span>Subtotal</span><span id="sSub"></span></div>
+      <div class="sum saving" id="rowItemDisc"><span>Item discounts</span><span id="sItemDisc"></span></div>
+      <div class="sum saving" id="rowDisc"><span>Discount</span><span id="sDisc"></span></div>
+      <div class="sum" id="rowDel"><span>Delivery</span><span id="sDel"></span></div>
+      <div class="total"><small>Total to pay</small><div class="n"><span class="cur" id="cur"></span><span id="sTotal"></span></div></div>
+      <div id="banner"></div>
+    </div>
+  </aside>
+</main>
+
+<div id="status">Waiting for POS…</div>
+
+<script>
+(function () {
+  var CHANNEL = "posa-customer-display";
+  var STORE_KEY = "posa-customer-display-last";
+  var $ = function (id) { return document.getElementById(id); };
+  var prevKeys = {};
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function money(n) {
+    return Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function qtyFmt(n) {
+    n = Number(n || 0);
+    return Number.isInteger(n) ? String(n) : n.toFixed(3).replace(/0+$/, "");
+  }
+
+  function render(d) {
+    if (!d) return;
+    var items = d.items || [];
+    var cur = d.currency || "";
+
+    if (!items.length) {
+      $("live").style.display = "none";
+      $("idle").style.display = "flex";
+      prevKeys = {};
+      return;
+    }
+    $("idle").style.display = "none";
+    $("live").style.display = "grid";
+
+    // lines
+    var html = "", nextKeys = {};
+    items.forEach(function (it) {
+      var key = it.id + "|" + it.qty;
+      nextKeys[key] = true;
+      var fresh = !prevKeys[key] ? " fresh" : "";
+      var meta = "";
+      if (it.uom && it.uom !== "Nos") meta += esc(it.uom) + " · ";
+      meta += cur + " " + money(it.rate) + " each";
+      var extra = "";
+      if (it.notes) extra += '<span class="meta">' + esc(it.notes.split(",").join(", ")) + "</span>";
+      if (it.discount_amount > 0) extra += '<span class="meta off">Saved ' + cur + " " + money(it.discount_amount * it.qty) + "</span>";
+      if (it.is_offer) extra += '<span class="meta off">Offer item</span>';
+      html += '<div class="row' + fresh + '"><span class="qty">' + qtyFmt(it.qty) + '×</span>' +
+              '<span class="name">' + esc(it.name) + '<span class="meta">' + meta + "</span>" + extra + "</span>" +
+              '<span class="amt">' + money(it.amount) + "</span></div>";
+    });
+    var list = $("list");
+    var grew = Object.keys(nextKeys).length && Object.keys(nextKeys).some(function (k) { return !prevKeys[k]; });
+    list.innerHTML = html;
+    if (grew) list.scrollTop = 0; // POS adds new lines at the top
+    prevKeys = nextKeys;
+
+    $("qtyCount").textContent = qtyFmt(d.total_qty) + (Number(d.total_qty) === 1 ? " item" : " items");
+
+    // context
+    var ctx = "";
+    if (d.customer_name) ctx += "Customer: <strong>" + esc(d.customer_name) + "</strong><br>";
+    if (d.order_type) ctx += "Order: <strong>" + esc(d.order_type) + "</strong><br>";
+    if (d.service_table) ctx += "Table: <strong>" + esc(d.service_table) + "</strong>" + (d.service_zone ? " (" + esc(d.service_zone) + ")" : "") + "<br>";
+    if (d.loyalty_points) ctx += "Loyalty balance: <strong>" + money(d.loyalty_points) + "</strong><br>";
+    if (d.customer_outstanding) ctx += "Previous balance: <strong>" + cur + " " + money(d.customer_outstanding) + "</strong><br>";
+    $("ctx").innerHTML = ctx;
+
+    // sums
+    $("sSub").textContent = cur + " " + money(d.gross);
+    toggleRow("rowItemDisc", "sItemDisc", d.items_discount, "- ", cur);
+    toggleRow("rowDisc", "sDisc", d.discount_amount, "- ", cur);
+    toggleRow("rowDel", "sDel", d.delivery_charges, "", cur);
+    $("cur").textContent = cur;
+    $("sTotal").textContent = money(d.total);
+
+    var b = $("banner");
+    if (d.stage === "payment") {
+      b.style.display = "block";
+      b.textContent = d.payment_method === "card" ? "Ready for card payment" : "Ready for payment";
+    } else if (d.stage === "tax") {
+      b.style.display = "block";
+      b.textContent = "Choosing payment method…";
+    } else {
+      b.style.display = "none";
+    }
+  }
+
+  function toggleRow(rowId, valId, v, sign, cur) {
+    var show = Number(v) > 0;
+    $(rowId).style.display = show ? "flex" : "none";
+    if (show) $(valId).textContent = sign + cur + " " + money(v);
+  }
+
+  function receive(d) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(d)); } catch (e) {}
+    $("status").textContent = "";
+    render(d);
+  }
+
+  // restore last known state (page reload / second monitor opened late)
+  try {
+    var last = localStorage.getItem(STORE_KEY);
+    if (last) render(JSON.parse(last));
+    else render({ items: [] });
+  } catch (e) { render({ items: [] }); }
+
+  if ("BroadcastChannel" in window) {
+    var ch = new BroadcastChannel(CHANNEL);
+    ch.onmessage = function (e) { if (e.data && e.data.type === "state") receive(e.data.payload); };
+    ch.postMessage({ type: "hello" }); // ask the POS to resend current state
+  } else {
+    // fallback for old browsers: same-origin storage events
+    window.addEventListener("storage", function (e) {
+      if (e.key === STORE_KEY && e.newValue) render(JSON.parse(e.newValue));
+    });
+  }
+
+  // F11 = fullscreen; double-click also toggles
+  document.addEventListener("dblclick", function () {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-01-09 17:19:01.338487",
+ "default_view": "List",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "section_break_2",
+  "column_break_2",
+  "workflow_state",
+  "type",
+  "party_type",
+  "purchase_order",
+  "column_break_ojesl",
+  "party",
+  "party_name",
+  "employee_name",
+  "driver_name",
+  "cnic",
+  "drivers_phone_no",
+  "vehicle_no",
+  "column_break_5",
+  "company",
+  "posting_date",
+  "abbr",
+  "scaled",
+  "first_weight",
+  "second_weight",
+  "net_weight",
+  "section_break_22",
+  "items",
+  "total_qty",
+  "section_break_19",
+  "remarks",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Naming Series",
+   "no_copy": 1,
+   "options": "GP.YY.MM.DD.",
+   "print_hide": 1
+  },
+  {
+   "fieldname": "section_break_2",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "workflow_state",
+   "fieldtype": "Link",
+   "label": "Workflow State",
+   "options": "Workflow State",
+   "read_only": 1
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Type",
+   "options": "\nIN\nOUT",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:in_list([\"IN\", \"OUT\"], doc.type) && doc.docstatus==0",
+   "fieldname": "party_type",
+   "fieldtype": "Select",
+   "in_filter": 1,
+   "label": "Courier Type",
+   "options": "\nCustomer\nEmployee\nShareholder\nSupplier"
+  },
+  {
+   "depends_on": "eval: doc.party_type == \"Supplier\"",
+   "fieldname": "purchase_order",
+   "fieldtype": "Link",
+   "label": "Purchase Order",
+   "options": "Purchase Order"
+  },
+  {
+   "fieldname": "column_break_ojesl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:in_list([\"IN\", \"OUT\"], doc.type) && doc.party_type",
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Courier",
+   "options": "party_type"
+  },
+  {
+   "depends_on": "eval:in_list([\"IN\", \"OUT\"], doc.type) && doc.party_type",
+   "fieldname": "party_name",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Courier Name"
+  },
+  {
+   "depends_on": "eval: doc.courier_type == \"Employee\"",
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Read Only",
+   "label": "Employee Name"
+  },
+  {
+   "fieldname": "driver_name",
+   "fieldtype": "Data",
+   "in_standard_filter": 1,
+   "label": "Driver Name"
+  },
+  {
+   "depends_on": "eval:doc.driver_name",
+   "description": "e.g 12345-1234567-1",
+   "fieldname": "cnic",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Driver's CNIC",
+   "length": 14
+  },
+  {
+   "depends_on": "eval:doc.driver_name",
+   "fieldname": "drivers_phone_no",
+   "fieldtype": "Data",
+   "label": "Driver's Phone No."
+  },
+  {
+   "fieldname": "vehicle_no",
+   "fieldtype": "Link",
+   "label": "Vehicle No",
+   "options": "Vehicle"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "print_hide": 1,
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Data",
+   "label": "Posting Date"
+  },
+  {
+   "fetch_from": "company.abbr",
+   "fieldname": "abbr",
+   "fieldtype": "Read Only",
+   "hidden": 1,
+   "label": "abbr",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "scaled",
+   "fieldtype": "Check",
+   "label": "Scaled"
+  },
+  {
+   "depends_on": "eval:doc.scaled",
+   "fieldname": "first_weight",
+   "fieldtype": "Float",
+   "label": "First Weight (kg)",
+   "precision": "3"
+  },
+  {
+   "depends_on": "eval:doc.scaled",
+   "fieldname": "second_weight",
+   "fieldtype": "Float",
+   "label": "Second Weight  (kg)",
+   "precision": "3"
+  },
+  {
+   "depends_on": "eval:doc.scaled",
+   "description": "in KG",
+   "fieldname": "net_weight",
+   "fieldtype": "Float",
+   "label": "Net Weight",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_22",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "in_standard_filter": 1,
+   "label": "items",
+   "options": "Gate Pass Item",
+   "reqd": 1
+  },
+  {
+   "bold": 1,
+   "default": "0",
+   "fieldname": "total_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Total QTY",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_19",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Gate Pass",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "icon": "fa fa-truck",
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-04-03 03:38:25.952901",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "Gate Pass",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Stock Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Stock User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "party",
+ "show_name_in_global_search": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "track_seen": 1
+}

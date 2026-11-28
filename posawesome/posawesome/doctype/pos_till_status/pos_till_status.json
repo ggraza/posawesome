@@ -1,0 +1,181 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "till_name",
+  "pos_profile",
+  "user",
+  "pos_opening_shift",
+  "disabled",
+  "column_break_ts1",
+  "last_seen",
+  "offline_pending",
+  "offline_failed",
+  "last_sync",
+  "section_ts2",
+  "device_id",
+  "company",
+  "app_version",
+  "column_break_ts2",
+  "ip",
+  "browser",
+  "help_tab",
+  "pos_till_status_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "till_name",
+   "fieldtype": "Data",
+   "label": "Till",
+   "reqd": 1,
+   "in_list_view": 1,
+   "bold": 1,
+   "description": "Rename it to the till number on the counter; the till keeps reporting under it."
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "Cashier",
+   "options": "User",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "pos_opening_shift",
+   "fieldtype": "Link",
+   "label": "Shift",
+   "options": "POS Opening Shift",
+   "read_only": 1
+  },
+  {
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Hide From the Monitor",
+   "default": "0",
+   "description": "For a till that is no longer used (a new browser or PC reports as a new till)."
+  },
+  {
+   "fieldname": "column_break_ts1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_seen",
+   "fieldtype": "Datetime",
+   "label": "Last Report",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "offline_pending",
+   "fieldtype": "Int",
+   "label": "Offline Invoices Waiting",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "offline_failed",
+   "fieldtype": "Int",
+   "label": "Offline Invoices Failed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_sync",
+   "fieldtype": "Datetime",
+   "label": "Last Upload",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_ts2",
+   "fieldtype": "Section Break",
+   "label": "Device",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "device_id",
+   "fieldtype": "Data",
+   "label": "Device ID",
+   "read_only": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "app_version",
+   "fieldtype": "Data",
+   "label": "App Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_ts2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Data",
+   "label": "IP Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "browser",
+   "fieldtype": "Data",
+   "label": "Browser",
+   "read_only": 1
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "pos_till_status_help",
+   "fieldtype": "HTML",
+   "label": "POS Till Status Help"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-26 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Till Status",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "till_name",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 0,
+ "autoname": "hash",
+ "title_field": "till_name"
+}

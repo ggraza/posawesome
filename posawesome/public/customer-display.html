@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Customer Display</title>
+<style>
+  :root {
+    --bg: #eceff3;
+    --card: #ffffff;
+    --ink: #1b2430;
+    --muted: #6b7684;
+    --line: #e3e7ec;
+    --zebra: #f7f9fb;
+    --navy: #0e2238;
+    --navy-2: #16324f;
+    --accent: #17a58a;
+    --saving: #d9822b;
+    --font: "Segoe UI", "Helvetica Neue", Arial, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body { font-family: var(--font); color: var(--ink); background: var(--bg); font-variant-numeric: tabular-nums; overflow: hidden; }
+
+  /* ---------- idle ---------- */
+  #idle {
+    height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; color: #fff; padding: 4vw;
+    background: radial-gradient(120% 90% at 50% 0%, var(--navy-2) 0%, var(--navy) 70%);
+  }
+  #idle .mark { width: 72px; height: 4px; background: var(--accent); border-radius: 2px; margin-bottom: 28px; }
+  #idle h1 { font-size: clamp(36px, 5.5vw, 84px); font-weight: 300; letter-spacing: .01em; }
+  #idle p { margin-top: 14px; font-size: clamp(16px, 1.8vw, 26px); color: #9db0c4; }
+  #idle .clock { margin-top: 48px; font-size: clamp(14px, 1.3vw, 20px); color: #7f93a9; }
+
+  /* ---------- live layout ---------- */
+  #live { height: 100%; display: none; grid-template-columns: 1fr minmax(340px, 30%); }
+
+  .main { display: flex; flex-direction: column; min-height: 0; padding: 22px 26px; gap: 14px; }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; }
+  .topbar h2 { font-size: 20px; font-weight: 600; letter-spacing: .01em; }
+  .topbar .sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .chip {
+    font-size: 13px; padding: 6px 12px; border-radius: 999px; background: var(--card);
+    border: 1px solid var(--line); color: var(--ink);
+  }
+  .chip b { font-weight: 600; }
+  .chip .k { color: var(--muted); margin-right: 5px; }
+
+  .sheet {
+    flex: 1; min-height: 0; display: flex; flex-direction: column;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 1px 2px rgba(14,34,56,.04);
+  }
+  .cols, .row {
+    display: grid; grid-template-columns: 44px minmax(0,1fr) 70px 100px 110px; column-gap: 14px; align-items: center;
+  }
+  .cols {
+    padding: 11px 20px; background: var(--navy); color: #cfdae6; font-size: 12px; font-weight: 600; letter-spacing: .04em;
+  }
+  .r { text-align: right; } .c { text-align: center; }
+  #list { flex: 1; overflow-y: auto; }
+  .row { padding: 5px 20px; border-bottom: 1px solid var(--line); font-size: 15px; }
+  .row:nth-child(even) { background: var(--zebra); }
+  .row .sn { color: var(--muted); font-size: 13px; }
+  .row .name { font-weight: 600; line-height: 1.3; }
+  .row .sub { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted); }
+  .row .sub.note { color: #3b6ea5; }
+  .row .sub.off { color: var(--saving); }
+  .row .qty { font-weight: 600; }
+  .row .amt { font-weight: 700; }
+  .row.fresh { animation: flash 1.2s ease-out; }
+  @keyframes flash { from { background: #d9f3ec; } to { background: inherit; } }
+  @media (prefers-reduced-motion: reduce) { .row.fresh { animation: none; } }
+  #list::-webkit-scrollbar { width: 8px; }
+  #list::-webkit-scrollbar-thumb { background: #ccd3db; border-radius: 4px; }
+
+  .foot { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); padding: 0 4px; }
+
+  /* ---------- summary panel ---------- */
+  .side {
+    background: linear-gradient(180deg, var(--navy-2) 0%, var(--navy) 100%);
+    color: #fff; padding: 26px 28px; display: flex; flex-direction: column;
+  }
+  .side .head { font-size: 13px; letter-spacing: .08em; color: #8ea4bb; font-weight: 600; }
+  .side .qtyline { margin-top: 6px; font-size: 22px; font-weight: 300; }
+  .sums { margin-top: 26px; }
+  .sum { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,.09); font-size: 16px; color: #b7c6d6; }
+  .sum span:last-child { color: #fff; font-weight: 500; }
+  .sum.saving span:last-child { color: #ffbb73; }
+  .grand { margin-top: auto; }
+  .grand .lbl { font-size: 14px; color: #8ea4bb; letter-spacing: .05em; }
+  .grand .n { margin-top: 4px; font-size: clamp(46px, 5.0vw, 92px); font-weight: 700; line-height: 1.05; letter-spacing: -.02em; word-break: break-all; }
+  .grand .cur { font-size: .34em; font-weight: 500; color: #8ea4bb; margin-right: 8px; letter-spacing: 0; }
+  #banner {
+    display: none; margin-top: 18px; padding: 12px 14px; border-radius: 8px; text-align: center;
+    background: rgba(23,165,138,.16); border: 1px solid rgba(23,165,138,.55); color: #7fe3cc; font-size: 15px; font-weight: 600;
+  }
+
+  #status { position: fixed; right: 10px; bottom: 6px; font-size: 12px; color: #98a2ad; z-index: 5; }
+
+  @media (max-width: 900px) {
+    #live { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+    .cols, .row { grid-template-columns: 30px minmax(0,1fr) 50px 80px 90px; column-gap: 8px; }
+    .grand .n { font-size: 44px; }
+  }
+</style>
+</head>
+<body>
+
+<section id="idle">
+  <div class="mark"></div>
+  <h1>Welcome</h1>
+  <p>Your order will appear here</p>
+  <div class="clock" id="idleClock"></div>
+</section>
+
+<main id="live">
+  <section class="main">
+    <div class="topbar">
+      <div>
+        <h2>Order summary</h2>
+        <div class="sub" id="clock"></div>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+    <div class="sheet">
+      <div class="cols">
+        <span class="c">#</span><span>ITEM</span><span class="c">QTY</span><span class="r">RATE</span><span class="r">AMOUNT</span>
+      </div>
+      <div id="list"></div>
+    </div>
+    <div class="foot"><span id="prevBal"></span><span>Thank you for your visit</span></div>
+  </section>
+
+  <aside class="side">
+    <div class="head">TOTAL ITEMS</div>
+    <div class="qtyline" id="qtyCount"></div>
+    <div class="sums">
+      <div class="sum"><span>Subtotal</span><span id="sSub"></span></div>
+      <div class="sum saving" id="rowItemDisc"><span>Item discounts</span><span id="sItemDisc"></span></div>
+      <div class="sum saving" id="rowDisc"><span>Discount</span><span id="sDisc"></span></div>
+      <div class="sum" id="rowDel"><span>Delivery</span><span id="sDel"></span></div>
+    </div>
+    <div class="grand">
+      <div class="lbl">TOTAL TO PAY</div>
+      <div class="n"><span class="cur" id="cur"></span><span id="sTotal"></span></div>
+      <div id="banner"></div>
+    </div>
+  </aside>
+</main>
+
+<div id="status">Waiting for POS…</div>
+
+<script>
+(function () {
+  var CHANNEL = "posa-customer-display";
+  var STORE_KEY = "posa-customer-display-last";
+  var $ = function (id) { return document.getElementById(id); };
+  var prevKeys = {};
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function money(n) {
+    return Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function qtyFmt(n) {
+    n = Number(n || 0);
+    return Number.isInteger(n) ? String(n) : n.toFixed(3).replace(/0+$/, "");
+  }
+
+  function tick() {
+    var t = new Date().toLocaleString(undefined, { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+    $("clock").textContent = t;
+    $("idleClock").textContent = t;
+  }
+  tick(); setInterval(tick, 20000);
+
+  function chip(k, v) { return '<span class="chip"><span class="k">' + k + '</span><b>' + esc(v) + '</b></span>'; }
+
+  function render(d) {
+    if (!d) return;
+    var items = d.items || [];
+    var cur = d.currency || "";
+
+    if (!items.length) {
+      $("live").style.display = "none";
+      $("idle").style.display = "flex";
+      prevKeys = {};
+      return;
+    }
+    $("idle").style.display = "none";
+    $("live").style.display = "grid";
+
+    var html = "", nextKeys = {};
+    items.forEach(function (it, i) {
+      var key = it.id + "|" + it.qty;
+      nextKeys[key] = true;
+      var fresh = !prevKeys[key] ? " fresh" : "";
+      var sub = "";
+      if (it.uom && it.uom !== "Nos") sub += '<span class="sub">' + esc(it.uom) + "</span>";
+      if (it.notes) sub += '<span class="sub note">' + esc(it.notes.split(",").join(", ")) + "</span>";
+      if (it.discount_amount > 0) sub += '<span class="sub off">Discount ' + cur + " " + money(it.discount_amount * it.qty) + "</span>";
+      if (it.is_offer) sub += '<span class="sub off">Offer item</span>';
+      html += '<div class="row' + fresh + '">' +
+              '<span class="sn c">' + (items.length - i) + "</span>" +
+              '<span class="name">' + esc(it.name) + sub + "</span>" +
+              '<span class="qty c">' + qtyFmt(it.qty) + "</span>" +
+              '<span class="r">' + money(it.rate) + "</span>" +
+              '<span class="amt r">' + money(it.amount) + "</span></div>";
+    });
+    var list = $("list");
+    var grew = Object.keys(nextKeys).some(function (k) { return !prevKeys[k]; });
+    list.innerHTML = html;
+    if (grew) list.scrollTop = 0;
+    prevKeys = nextKeys;
+
+    var n = Number(d.total_qty);
+    $("qtyCount").textContent = qtyFmt(n) + (n === 1 ? " item" : " items");
+
+    var chips = "";
+    if (d.customer_name) chips += chip("Customer", d.customer_name);
+    if (d.order_type) chips += chip("Order", d.order_type);
+    if (d.service_table) chips += chip("Table", d.service_table + (d.service_zone ? " · " + d.service_zone : ""));
+    if (d.loyalty_points) chips += chip("Loyalty", money(d.loyalty_points));
+    $("chips").innerHTML = chips;
+    $("prevBal").textContent = d.customer_outstanding ? "Previous balance: " + cur + " " + money(d.customer_outstanding) : "";
+
+    $("sSub").textContent = cur + " " + money(d.gross);
+    toggleRow("rowItemDisc", "sItemDisc", d.items_discount, "- ", cur);
+    toggleRow("rowDisc", "sDisc", d.discount_amount, "- ", cur);
+    toggleRow("rowDel", "sDel", d.delivery_charges, "", cur);
+    $("cur").textContent = cur;
+    $("sTotal").textContent = money(d.total);
+
+    var b = $("banner");
+    if (d.stage === "payment") {
+      b.style.display = "block";
+      b.textContent = d.payment_method === "card" ? "Ready for card payment" : "Ready for payment";
+    } else if (d.stage === "tax") {
+      b.style.display = "block";
+      b.textContent = "Choosing payment method…";
+    } else {
+      b.style.display = "none";
+    }
+  }
+
+  function toggleRow(rowId, valId, v, sign, cur) {
+    var show = Number(v) > 0;
+    $(rowId).style.display = show ? "flex" : "none";
+    if (show) $(valId).textContent = sign + cur + " " + money(v);
+  }
+
+  function receive(d) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(d)); } catch (e) {}
+    $("status").textContent = "";
+    render(d);
+  }
+
+  try {
+    var last = localStorage.getItem(STORE_KEY);
+    render(last ? JSON.parse(last) : { items: [] });
+  } catch (e) { render({ items: [] }); }
+
+  if ("BroadcastChannel" in window) {
+    var ch = new BroadcastChannel(CHANNEL);
+    ch.onmessage = function (e) { if (e.data && e.data.type === "state") receive(e.data.payload); };
+    ch.postMessage({ type: "hello" });
+  } else {
+    window.addEventListener("storage", function (e) {
+      if (e.key === STORE_KEY && e.newValue) render(JSON.parse(e.newValue));
+    });
+  }
+
+  document.addEventListener("dblclick", function () {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  });
+})();
+</script>
+</body>
+</html>

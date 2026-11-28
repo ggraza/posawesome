@@ -1,0 +1,143 @@
+{
+ "actions": [],
+ "creation": "2025-06-14 05:54:10.971282",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "checkin",
+  "checkout",
+  "total_hours",
+  "column_break_4",
+  "early_going",
+  "half_day",
+  "late",
+  "status",
+  "attendance",
+  "shift_start",
+  "shift_end",
+  "shift_actual_start",
+  "shift_actual_end"
+ ],
+ "fields": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "checkin",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Check In",
+   "read_only": 1
+  },
+  {
+   "fieldname": "checkout",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Check Out",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_hours",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Total Hours",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Now",
+   "fieldname": "early_going",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Early Going",
+   "permlevel": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "half_day",
+   "fieldtype": "Check",
+   "label": "Half Day",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "late",
+   "fieldtype": "Check",
+   "label": "Late",
+   "read_only": 1
+  },
+  {
+   "fieldname": "attendance",
+   "fieldtype": "Link",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Attendance Marked",
+   "options": "Attendance",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "shift_start",
+   "fieldtype": "Time",
+   "hidden": 1,
+   "label": "Shift Start",
+   "print_hide": 1
+  },
+  {
+   "fieldname": "shift_end",
+   "fieldtype": "Time",
+   "hidden": 1,
+   "label": "Shift End",
+   "print_hide": 1
+  },
+  {
+   "fieldname": "shift_actual_start",
+   "fieldtype": "Time",
+   "hidden": 1,
+   "label": "Shift Actual Start",
+   "print_hide": 1
+  },
+  {
+   "fieldname": "shift_actual_end",
+   "fieldtype": "Time",
+   "hidden": 1,
+   "label": "Shift Actual End",
+   "print_hide": 1
+  },
+  {
+   "fetch_from": "attendance.status",
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "in_filter": 1,
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2025-06-21 15:00:16.379183",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "Daily Attendance Table",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

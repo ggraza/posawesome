@@ -1,0 +1,244 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "deal_type",
+  "quantity",
+  "deal_price",
+  "column_break_d1",
+  "disabled",
+  "repeat",
+  "max_sets",
+  "priority",
+  "company",
+  "section_when",
+  "valid_from",
+  "valid_upto",
+  "column_break_d2",
+  "daily_from",
+  "daily_to",
+  "days",
+  "section_items",
+  "items",
+  "item_groups",
+  "brands",
+  "column_break_d3",
+  "pos_profiles",
+  "description",
+  "help_tab",
+  "pos_deal_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1,
+   "in_list_view": 1,
+   "bold": 1,
+   "description": "Shown on the till and the receipt, e.g. Any 3 juices for Rs 999"
+  },
+  {
+   "fieldname": "deal_type",
+   "fieldtype": "Select",
+   "label": "Deal Type",
+   "options": "Mix and Match\nMulti-Buy",
+   "reqd": 1,
+   "default": "Mix and Match",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Mix and Match: any items of the lists count together (any 3 for 999). Multi-Buy: each item on its own (3 of the same for 500)."
+  },
+  {
+   "fieldname": "quantity",
+   "fieldtype": "Int",
+   "label": "Quantity",
+   "reqd": 1,
+   "non_negative": 1,
+   "in_list_view": 1,
+   "description": "How many make one deal, e.g. 3"
+  },
+  {
+   "fieldname": "deal_price",
+   "fieldtype": "Currency",
+   "label": "Deal Price",
+   "reqd": 1,
+   "non_negative": 1,
+   "in_list_view": 1,
+   "description": "The price of those items together"
+  },
+  {
+   "fieldname": "column_break_d1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled",
+   "default": "0",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "repeat",
+   "fieldtype": "Check",
+   "label": "Repeat",
+   "default": "1",
+   "description": "6 items = 2 deals, 9 = 3 ... (off: once per sale)"
+  },
+  {
+   "fieldname": "max_sets",
+   "fieldtype": "Int",
+   "label": "Most Deals Per Sale",
+   "non_negative": 1,
+   "default": "0",
+   "depends_on": "eval:doc.repeat",
+   "description": "0 = no limit"
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Int",
+   "label": "Priority",
+   "default": "0",
+   "description": "When an item is in two deals, the higher priority wins"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "section_when",
+   "fieldtype": "Section Break",
+   "label": "When"
+  },
+  {
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "label": "Valid From"
+  },
+  {
+   "fieldname": "valid_upto",
+   "fieldtype": "Date",
+   "label": "Valid Upto"
+  },
+  {
+   "fieldname": "column_break_d2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "daily_from",
+   "fieldtype": "Time",
+   "label": "Daily From",
+   "description": "e.g. 17:00 for an evening deal; empty = all day"
+  },
+  {
+   "fieldname": "daily_to",
+   "fieldtype": "Time",
+   "label": "Daily To",
+   "description": "A window like 22:00 to 02:00 runs past midnight"
+  },
+  {
+   "fieldname": "days",
+   "fieldtype": "Data",
+   "label": "Days",
+   "description": "e.g. Fri, Sat. Empty = every day"
+  },
+  {
+   "fieldname": "section_items",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table MultiSelect",
+   "label": "Items",
+   "options": "POS Deal Item"
+  },
+  {
+   "fieldname": "item_groups",
+   "fieldtype": "Table MultiSelect",
+   "label": "Item Groups",
+   "options": "POS Deal Item Group"
+  },
+  {
+   "fieldname": "brands",
+   "fieldtype": "Table MultiSelect",
+   "label": "Brands",
+   "options": "POS Deal Brand"
+  },
+  {
+   "fieldname": "column_break_d3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pos_profiles",
+   "fieldtype": "Table MultiSelect",
+   "label": "POS Profiles",
+   "options": "POS Deal Profile",
+   "description": "Empty = every POS Profile with the deal type switched on"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "pos_deal_help",
+   "fieldtype": "HTML",
+   "label": "POS Deal Help"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-26 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Deal",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "format:DEAL-{#####}",
+ "naming_rule": "Expression",
+ "title_field": "title",
+ "search_fields": "title,deal_type"
+}

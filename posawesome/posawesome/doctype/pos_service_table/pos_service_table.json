@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "creation": "2026-07-11 16:20:44.902076",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "service_table",
+  "service_zone",
+  "allow_queue_ticket"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "service_table",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Service Table",
+   "options": "Service Table"
+  },
+  {
+   "columns": 2,
+   "default": "0",
+   "fieldname": "allow_queue_ticket",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Allow Queue Ticket"
+  },
+  {
+   "fetch_from": "service_table.service_zone",
+   "fieldname": "service_zone",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Service Zone",
+   "options": "Service Zone"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-11 16:26:11.627300",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Service Table",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

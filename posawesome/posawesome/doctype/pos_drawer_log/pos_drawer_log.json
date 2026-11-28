@@ -1,0 +1,131 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "opened_on",
+  "user",
+  "pos_profile",
+  "pos_opening_shift",
+  "column_break_d1",
+  "reason",
+  "approval",
+  "offline",
+  "client_id",
+  "help_tab",
+  "pos_drawer_log_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "opened_on",
+   "fieldtype": "Datetime",
+   "label": "Opened On",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "Cashier",
+   "options": "User",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "pos_opening_shift",
+   "fieldtype": "Link",
+   "label": "POS Opening Shift",
+   "options": "POS Opening Shift",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_d1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Data",
+   "label": "Reason",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "approval",
+   "fieldtype": "Link",
+   "label": "Approval",
+   "options": "POS Approval Log",
+   "read_only": 1
+  },
+  {
+   "fieldname": "offline",
+   "fieldtype": "Check",
+   "label": "Made Offline",
+   "read_only": 1
+  },
+  {
+   "fieldname": "client_id",
+   "fieldtype": "Data",
+   "label": "Client ID",
+   "read_only": 1,
+   "hidden": 1,
+   "search_index": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "pos_drawer_log_help",
+   "fieldtype": "HTML",
+   "label": "POS Drawer Log Help"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-26 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Drawer Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "format:NOSALE-{YY}{MM}-{#####}",
+ "naming_rule": "Expression",
+ "title_field": "reason",
+ "in_create": 1
+}

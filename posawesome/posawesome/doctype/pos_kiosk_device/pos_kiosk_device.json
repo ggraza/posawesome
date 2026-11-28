@@ -1,0 +1,164 @@
+{
+ "actions": [],
+ "creation": "2026-11-25 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "device_name",
+  "device_id",
+  "pos_profile",
+  "kiosk_display",
+  "column_break_dev",
+  "last_seen",
+  "network",
+  "user",
+  "section_detail",
+  "display_version",
+  "media_cached",
+  "media_mb",
+  "column_break_detail",
+  "screen",
+  "ip_address",
+  "user_agent"
+ ],
+ "fields": [
+  {
+   "fieldname": "device_name",
+   "fieldtype": "Data",
+   "label": "Screen Name",
+   "in_list_view": 1,
+   "bold": 1,
+   "description": "Shown in this list; can also be set on the kiosk (settings)"
+  },
+  {
+   "fieldname": "device_id",
+   "fieldtype": "Data",
+   "label": "Device ID",
+   "reqd": 1,
+   "unique": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "kiosk_display",
+   "fieldtype": "Link",
+   "label": "Showing Display",
+   "options": "POS Kiosk Display",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_dev",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_seen",
+   "fieldtype": "Datetime",
+   "label": "Last Seen",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "network",
+   "fieldtype": "Select",
+   "label": "Network At Last Report",
+   "options": "\nOnline\nOffline",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_detail",
+   "fieldtype": "Section Break",
+   "label": "Details",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "display_version",
+   "fieldtype": "Data",
+   "label": "Display Version",
+   "read_only": 1
+  },
+  {
+   "fieldname": "media_cached",
+   "fieldtype": "Int",
+   "label": "Media Files Kept",
+   "read_only": 1
+  },
+  {
+   "fieldname": "media_mb",
+   "fieldtype": "Float",
+   "label": "Media Size (MB)",
+   "read_only": 1,
+   "precision": "1"
+  },
+  {
+   "fieldname": "column_break_detail",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "screen",
+   "fieldtype": "Data",
+   "label": "Screen Size",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user_agent",
+   "fieldtype": "Small Text",
+   "label": "Browser",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-25 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Kiosk Device",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "sort_field": "last_seen",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:device_id",
+ "naming_rule": "By fieldname",
+ "title_field": "device_name",
+ "show_title_field_in_link": 1,
+ "document_type": "Other"
+}

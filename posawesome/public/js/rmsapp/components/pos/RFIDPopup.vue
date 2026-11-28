@@ -1,0 +1,304 @@
+<template>
+  <v-row justify="center">
+    <v-dialog v-model="isVisible" max-width="500px" max-height="90vh">
+      <v-card elevation="8" class="rfid-dialog-card">
+        <!-- Header Section - White Background with Blue Text -->
+        <v-card-title class="rfid-dialog-header">
+          <div class="header-content">
+            <div class="header-icon-wrapper">
+              <v-icon class="header-icon">mdi-contactless-payment</v-icon>
+            </div>
+            <div class="header-text">
+              <h5 class="header-title">{{ title }}</h5>
+              <p class="header-subtitle">{{ __('Scan RFID to proceed') }}</p>
+            </div>
+          </div>
+        </v-card-title>
+
+        <!-- Content Section - Optimized for minimal scrolling -->
+        <v-card-text class="rfid-dialog-content">
+          <v-container class="pa-0">
+            <v-row>
+              <v-col cols="12">
+                <p class="message-text">{{ message }}</p>
+                <!-- Hidden RFID Input -->
+                <v-text-field
+                  v-model="rfidInput"
+                  :label="frappe._('Scan RFID')"
+                  type="text"
+                  class="hidden-text-field"
+                  autofocus
+                  @keydown.enter="validateAndScan"
+                ></v-text-field>
+                <!-- Error Message -->
+                <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
+              </v-col>
+            </v-row>
+          </v-container>
+        </v-card-text>
+
+        <!-- Actions Section -->
+        <v-card-actions class="dialog-actions-container">
+          <v-btn
+            theme="dark"
+            @click="closePopup"
+            class="pos-action-btn cancel-action-btn"
+            size="large"
+            elevation="2"
+          >
+            <v-icon start>mdi-close-circle-outline</v-icon>
+            <span>{{ __('Cancel') }}</span>
+          </v-btn>
+          <v-spacer />
+          <v-btn
+            theme="dark"
+            @click="validateAndScan"
+            class="pos-action-btn submit-action-btn"
+            size="large"
+            elevation="2"
+          >
+            <v-icon start>mdi-check-circle-outline</v-icon>
+            <span>{{ __('Submit') }}</span>
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-row>
+</template>
+
+<script>
+import { evntBus } from '../../bus';
+export default {
+  data() {
+    return {
+      isVisible: false,
+      title: "",
+      message: "",
+      rfidInput: "",
+      onScanCallback: null,
+      errorMessage: "",
+    };
+  },
+  methods: {
+    openPopup({ title, message, onScan }) {
+      this.title = title;
+      this.message = message;
+      this.onScanCallback = onScan;
+      this.rfidInput = "";
+      this.errorMessage = "";
+      this.isVisible = true;
+    },
+    closePopup() {
+      this.isVisible = false;
+      this.rfidInput = "";
+      this.errorMessage = "";
+      evntBus.$emit("escEventTriggered");
+    },
+    validateAndScan() {
+      const scannedRFID = this.rfidInput.trim();
+      if (!scannedRFID) {
+        this.errorMessage = "No RFID scanned. Please try again.";
+        return;
+      }
+      if (scannedRFID.length < 5) {
+        this.errorMessage = "Invalid RFID. Please scan again.";
+        return;
+      }
+      if (this.onScanCallback) {
+        this.onScanCallback(scannedRFID);
+      }
+      this.closePopup();
+    },
+  },
+};
+</script>
+
+<style scoped>
+/* Main Dialog Card */
+.rfid-dialog-card {
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 1px solid rgba(25, 118, 210, 0.1);
+  transition: all 0.3s ease;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header Section - White Background with Blue Text */
+.rfid-dialog-header {
+  background: white;
+  color: #1976d2;
+  padding: 16px 24px;
+  border-bottom: 2px solid rgba(25, 118, 210, 0.1);
+  flex-shrink: 0;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-icon-wrapper {
+  background: rgba(25, 118, 210, 0.1);
+  border-radius: 50%;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.header-icon {
+  font-size: 20px;
+  color: #1976d2;
+}
+
+.header-text {
+  flex: 1;
+}
+
+.header-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.2;
+  color: #1976d2;
+}
+
+.header-subtitle {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  margin: 2px 0 0 0;
+  line-height: 1.3;
+  color: #1976d2;
+}
+
+/* Content Section - Optimized for minimal scrolling */
+.rfid-dialog-content {
+  padding: 20px 24px;
+  background: white;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.message-text {
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.hidden-text-field {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.error-text {
+  color: #d32f2f;
+  font-size: 0.9rem;
+  margin-top: 12px;
+  font-weight: 500;
+}
+
+/* Actions Section */
+.dialog-actions-container {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-top: 1px solid #e0e0e0;
+  padding: 16px 24px;
+  gap: 12px;
+}
+
+.pos-action-btn {
+  border-radius: 12px;
+  text-transform: none;
+  font-weight: 600;
+  padding: 12px 32px;
+  min-width: 120px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pos-action-btn,
+.pos-action-btn .v-icon,
+.pos-action-btn span,
+.pos-action-btn :deep(.v-btn__content) {
+  color: white !important;
+}
+
+.cancel-action-btn {
+  background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%) !important;
+}
+
+.cancel-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(211, 47, 47, 0.4);
+}
+
+.submit-action-btn {
+  background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%) !important;
+}
+
+.submit-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .rfid-dialog-header {
+    padding: 12px 16px;
+  }
+  .header-content {
+    gap: 8px;
+  }
+  .header-title {
+    font-size: 1.2rem;
+  }
+  .rfid-dialog-content {
+    padding: 16px;
+  }
+  .dialog-actions-container {
+    padding: 12px 16px;
+  }
+  .pos-action-btn {
+    padding: 10px 24px;
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+  .rfid-dialog-content {
+    padding: 12px;
+  }
+  .pos-action-btn {
+    padding: 8px 16px;
+    min-width: 90px;
+  }
+}
+
+/* Animation Effects */
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rfid-dialog-card {
+  animation: slideInFromTop 0.4s ease-out;
+}
+</style>

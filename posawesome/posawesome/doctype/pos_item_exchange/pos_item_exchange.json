@@ -1,0 +1,432 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-11-23 01:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "exchange_type",
+  "status",
+  "customer",
+  "customer_name",
+  "column_break_main",
+  "posting_date",
+  "company",
+  "pos_profile",
+  "pos_opening_shift",
+  "cashier",
+  "section_invoices",
+  "original_invoice",
+  "column_break_inv",
+  "return_invoice",
+  "new_invoice",
+  "section_returned",
+  "returned_items",
+  "section_replacement",
+  "replacement_items",
+  "section_settlement",
+  "currency",
+  "returned_total",
+  "replacement_total",
+  "difference",
+  "column_break_settle",
+  "settlement",
+  "additional_payment",
+  "refund_amount",
+  "payments",
+  "section_approval",
+  "approval_required",
+  "approved_by",
+  "column_break_appr",
+  "approved_on",
+  "section_cancel",
+  "cancellation_reason",
+  "column_break_canc",
+  "cancelled_by",
+  "cancelled_on",
+  "client_ref",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "POS-EXC-.YYYY.-",
+   "default": "POS-EXC-.YYYY.-",
+   "reqd": 1,
+   "print_hide": 1,
+   "hidden": 1
+  },
+  {
+   "fieldname": "exchange_type",
+   "fieldtype": "Select",
+   "label": "Type",
+   "options": "Exchange\nReplacement",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nCompleted\nCancelled",
+   "default": "Draft",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "allow_on_submit": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "label": "Customer Name",
+   "fetch_from": "customer.customer_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Date",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "read_only": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "pos_opening_shift",
+   "fieldtype": "Link",
+   "label": "POS Opening Shift",
+   "options": "POS Opening Shift",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cashier",
+   "fieldtype": "Link",
+   "label": "Cashier",
+   "options": "User",
+   "read_only": 1,
+   "default": "__user"
+  },
+  {
+   "fieldname": "section_invoices",
+   "fieldtype": "Section Break",
+   "label": "Invoices"
+  },
+  {
+   "fieldname": "original_invoice",
+   "fieldtype": "Link",
+   "label": "Original Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1,
+   "reqd": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_inv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "return_invoice",
+   "fieldtype": "Link",
+   "label": "Credit Note (Return)",
+   "options": "Sales Invoice",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "new_invoice",
+   "fieldtype": "Link",
+   "label": "New Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "section_returned",
+   "fieldtype": "Section Break",
+   "label": "Returned Items"
+  },
+  {
+   "fieldname": "returned_items",
+   "fieldtype": "Table",
+   "label": "Returned Items",
+   "options": "POS Item Exchange Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_replacement",
+   "fieldtype": "Section Break",
+   "label": "Replacement Items"
+  },
+  {
+   "fieldname": "replacement_items",
+   "fieldtype": "Table",
+   "label": "Replacement Items",
+   "options": "POS Item Exchange Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_settlement",
+   "fieldtype": "Section Break",
+   "label": "Settlement"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "returned_total",
+   "fieldtype": "Currency",
+   "label": "Returned Items Total",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "replacement_total",
+   "fieldtype": "Currency",
+   "label": "Replacement Items Total",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "difference",
+   "fieldtype": "Currency",
+   "label": "Exchange Difference",
+   "options": "currency",
+   "read_only": 1,
+   "description": "Replacement Items Total - Returned Items Total"
+  },
+  {
+   "fieldname": "column_break_settle",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "settlement",
+   "fieldtype": "Select",
+   "label": "Settlement",
+   "options": "Equal Value\nAdditional Payment\nRefund",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "additional_payment",
+   "fieldtype": "Currency",
+   "label": "Additional Payment",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "refund_amount",
+   "fieldtype": "Currency",
+   "label": "Refund Amount",
+   "options": "currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payments",
+   "fieldtype": "Table",
+   "label": "Payments / Refunds",
+   "options": "POS Item Exchange Payment",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_approval",
+   "fieldtype": "Section Break",
+   "label": "Approval"
+  },
+  {
+   "fieldname": "approval_required",
+   "fieldtype": "Check",
+   "label": "Manager Approval Required",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_appr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_cancel",
+   "fieldtype": "Section Break",
+   "label": "Cancellation",
+   "collapsible": 1,
+   "depends_on": "eval:doc.docstatus>=1"
+  },
+  {
+   "fieldname": "cancellation_reason",
+   "fieldtype": "Small Text",
+   "label": "Cancellation Reason",
+   "allow_on_submit": 1,
+   "description": "Required to cancel. Cancelling reverses the new invoice and the credit note.",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_canc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cancelled_by",
+   "fieldtype": "Link",
+   "label": "Cancelled By",
+   "options": "User",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "cancelled_on",
+   "fieldtype": "Datetime",
+   "label": "Cancelled On",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "client_ref",
+   "fieldtype": "Data",
+   "label": "Terminal Reference",
+   "read_only": 1,
+   "unique": 1,
+   "no_copy": 1,
+   "hidden": 1,
+   "description": "Id of the exchange on the POS terminal (a retried request returns the same exchange)."
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "POS Item Exchange",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  }
+ ],
+ "is_submittable": 1,
+ "links": [
+  {
+   "group": "Invoices",
+   "link_doctype": "Sales Invoice",
+   "link_fieldname": "posa_item_exchange"
+  }
+ ],
+ "modified": "2026-11-23 01:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Item Exchange",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "title_field": "customer",
+ "show_title_field_in_link": 0,
+ "track_changes": 1,
+ "track_seen": 0,
+ "permissions": [
+  {
+   "role": "Sales User",
+   "read": 1,
+   "report": 1,
+   "print": 1,
+   "email": 1,
+   "export": 1,
+   "create": 1,
+   "submit": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "report": 1,
+   "print": 1,
+   "email": 1,
+   "export": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "write": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "report": 1,
+   "print": 1,
+   "email": 1,
+   "export": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "write": 1
+  },
+  {
+   "role": "System Manager",
+   "read": 1,
+   "report": 1,
+   "print": 1,
+   "email": 1,
+   "export": 1,
+   "create": 1,
+   "submit": 1,
+   "cancel": 1,
+   "write": 1,
+   "delete": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "title": "Completed",
+   "color": "Green"
+  },
+  {
+   "title": "Cancelled",
+   "color": "Red"
+  }
+ ]
+}

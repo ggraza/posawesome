@@ -1,0 +1,43 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "key",
+  "action"
+ ],
+ "fields": [
+  {
+   "fieldname": "key",
+   "fieldtype": "Data",
+   "label": "Key",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 3,
+   "description": "F1 to F12, or with Ctrl / Alt / Shift: F4, Ctrl+Q, Alt+P, Ctrl+Shift+K"
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Select",
+   "label": "Action",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 5,
+   "options": "Pay\nHold\nResume Draft\nCancel Cart\nReturns\nVoid Last Item\nSearch Box\nQuick Keys\nNo Sale\nCash Pickup\nCash In\nCash Out\nX Report\nReprint Last Receipt\nTraining Mode"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-26 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Hotkey",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "istable": 1,
+ "editable_grid": 1
+}

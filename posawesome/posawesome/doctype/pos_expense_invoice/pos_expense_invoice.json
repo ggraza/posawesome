@@ -1,0 +1,181 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2024-09-26 14:05:31.075702",
+ "default_view": "List",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "title",
+  "company",
+  "pos_opening_shift",
+  "expense_type",
+  "column_break_x6owv",
+  "date",
+  "mode_of_payment",
+  "paid_from",
+  "posa_create_journal_entry",
+  "section_break_md2wj",
+  "expense_detail",
+  "section_break_kb9cs",
+  "total_quantity",
+  "column_break_q4cve",
+  "total_expense",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "naming_series",
+   "options": "POS-EX-.company.-"
+  },
+  {
+   "default": "{expense}",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Title",
+   "no_copy": 1,
+   "print_hide": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_x6owv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pos_opening_shift",
+   "fieldtype": "Link",
+   "label": "POS Shift",
+   "options": "POS Opening Shift"
+  },
+  {
+   "fieldname": "section_break_md2wj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "expense_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Expense Type",
+   "options": "Internal\nExternal",
+   "reqd": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "POS Expense Invoice",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "expense_detail",
+   "fieldtype": "Table",
+   "label": "Expense detail",
+   "options": "POS Expense Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_kb9cs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_q4cve",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_quantity",
+   "fieldtype": "Float",
+   "label": "Total Quantity",
+   "read_only": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Posting Date"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_expense",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Grand Total",
+   "options": "Company:company:default_currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mode_of_payment",
+   "fieldtype": "Link",
+   "label": "Mode of Payment",
+   "options": "Mode of Payment"
+  },
+  {
+   "fieldname": "paid_from",
+   "fieldtype": "Link",
+   "label": "Paid From",
+   "options": "Account"
+  },
+  {
+   "default": "0",
+   "fieldname": "posa_create_journal_entry",
+   "fieldtype": "Check",
+   "label": "Create Auto Journal Entry on Expense Submit"
+  }
+ ],
+ "icon": "fa fa-credit-card",
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "group": "Journal Entry",
+   "link_doctype": "Journal Entry",
+   "link_fieldname": "reference_name"
+  }
+ ],
+ "modified": "2026-02-15 01:52:10.748435",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Expense Invoice",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  }
+ ],
+ "show_name_in_global_search": 1,
+ "sort_field": "modified",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,230 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "item_code",
+  "item_name",
+  "uom",
+  "batch_no",
+  "expiry_date",
+  "reason",
+  "column_break_m1",
+  "company",
+  "price_list",
+  "original_price",
+  "markdown_price",
+  "discount_pct",
+  "qty",
+  "valid_upto",
+  "section_labels",
+  "labels",
+  "sold",
+  "amended_from",
+  "help_tab",
+  "pos_markdown_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "label": "Item",
+   "options": "Item",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name",
+   "fetch_from": "item_code.item_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM",
+   "fetch_from": "item_code.stock_uom",
+   "read_only": 1
+  },
+  {
+   "fieldname": "batch_no",
+   "fieldtype": "Link",
+   "label": "Batch",
+   "options": "Batch",
+   "description": "Optional: the batch on the shelf"
+  },
+  {
+   "fieldname": "expiry_date",
+   "fieldtype": "Date",
+   "label": "Expiry Date"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Select",
+   "label": "Reason",
+   "options": "Near Expiry\nDamaged Pack\nClearance\nOther",
+   "default": "Near Expiry",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_m1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "price_list",
+   "fieldtype": "Link",
+   "label": "Price List",
+   "options": "Price List",
+   "reqd": 1,
+   "description": "The selling price list of the store"
+  },
+  {
+   "fieldname": "original_price",
+   "fieldtype": "Currency",
+   "label": "Normal Price",
+   "read_only": 1
+  },
+  {
+   "fieldname": "markdown_price",
+   "fieldtype": "Currency",
+   "label": "Reduced Price",
+   "reqd": 1,
+   "non_negative": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "discount_pct",
+   "fieldtype": "Percent",
+   "label": "Discount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "qty",
+   "fieldtype": "Int",
+   "label": "Labels",
+   "reqd": 1,
+   "non_negative": 1,
+   "default": "1",
+   "in_list_view": 1,
+   "description": "One label per item on the shelf"
+  },
+  {
+   "fieldname": "valid_upto",
+   "fieldtype": "Date",
+   "label": "Sell Until",
+   "description": "Empty = the expiry date"
+  },
+  {
+   "fieldname": "section_labels",
+   "fieldtype": "Section Break",
+   "label": "Labels"
+  },
+  {
+   "fieldname": "labels",
+   "fieldtype": "Table",
+   "label": "Labels",
+   "options": "POS Markdown Label",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "sold",
+   "fieldtype": "Int",
+   "label": "Sold",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "options": "POS Markdown",
+   "read_only": 1,
+   "no_copy": 1,
+   "print_hide": 1
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "pos_markdown_help",
+   "fieldtype": "HTML",
+   "label": "POS Markdown Help"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-26 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Markdown",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "submit": 1,
+   "cancel": 1,
+   "amend": 1,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Stock User",
+   "submit": 1,
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "print": 1,
+   "report": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1,
+   "print": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "format:MD-{YY}{MM}-{#####}",
+ "naming_rule": "Expression",
+ "is_submittable": 1,
+ "title_field": "item_name"
+}

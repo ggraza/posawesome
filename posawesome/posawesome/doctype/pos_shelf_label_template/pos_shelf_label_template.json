@@ -1,0 +1,174 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 20:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "template_name",
+  "output",
+  "label_kind",
+  "disabled",
+  "column_break_t1",
+  "width_mm",
+  "height_mm",
+  "columns",
+  "rows",
+  "page_size",
+  "section_body",
+  "body",
+  "css",
+  "help_tab",
+  "pos_shelf_label_template_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "label": "Template",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "output",
+   "fieldtype": "Select",
+   "label": "Printer Language",
+   "options": "HTML\nZPL\nTSPL",
+   "default": "HTML",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "HTML: A4 sheets or any printer through the browser / QZ Tray. ZPL: Zebra label printers. TSPL: TSC, Xprinter and similar."
+  },
+  {
+   "fieldname": "label_kind",
+   "fieldtype": "Select",
+   "label": "Kind",
+   "options": "Standard\nOffer\nSheet",
+   "default": "Standard",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled",
+   "default": "0"
+  },
+  {
+   "fieldname": "column_break_t1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "width_mm",
+   "fieldtype": "Float",
+   "label": "Label Width (mm)",
+   "default": "58",
+   "reqd": 1
+  },
+  {
+   "fieldname": "height_mm",
+   "fieldtype": "Float",
+   "label": "Label Height (mm)",
+   "default": "38",
+   "reqd": 1
+  },
+  {
+   "fieldname": "columns",
+   "fieldtype": "Int",
+   "label": "Labels Across",
+   "default": "1",
+   "description": "HTML sheets: labels per row (e.g. 3 on A4)"
+  },
+  {
+   "fieldname": "rows",
+   "fieldtype": "Int",
+   "label": "Rows per Page",
+   "default": "0",
+   "description": "HTML sheets: rows per page (e.g. 8 on A4); 0 = one label per page"
+  },
+  {
+   "fieldname": "page_size",
+   "fieldtype": "Select",
+   "label": "Page",
+   "options": "Label\nA4\nLetter",
+   "default": "Label"
+  },
+  {
+   "fieldname": "section_body",
+   "fieldtype": "Section Break",
+   "label": "Template"
+  },
+  {
+   "fieldname": "body",
+   "fieldtype": "Code",
+   "label": "Template",
+   "options": "Jinja",
+   "reqd": 1,
+   "description": "One label. Jinja with: item_code, item_name, name2, uom, price, price_text, mrp_text, saving_text, was_text, unit_price_text, barcode, barcode_svg, offer_text, valid_until, company, print_date. Raw templates: ZPL / TSPL commands."
+  },
+  {
+   "fieldname": "css",
+   "fieldtype": "Code",
+   "label": "CSS",
+   "options": "CSS",
+   "depends_on": "eval:doc.output=='HTML'"
+  },
+  {
+   "fieldname": "help_tab",
+   "fieldtype": "Tab Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "pos_shelf_label_template_help",
+   "fieldtype": "HTML",
+   "label": "POS Shelf Label Template Help"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-26 20:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Shelf Label Template",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Sales Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "delete": 1,
+   "report": 1,
+   "export": 1,
+   "print": 1,
+   "email": 1,
+   "share": 1
+  },
+  {
+   "role": "Stock User",
+   "read": 1
+  },
+  {
+   "role": "Sales User",
+   "read": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "autoname": "field:template_name",
+ "naming_rule": "By fieldname",
+ "title_field": "template_name"
+}

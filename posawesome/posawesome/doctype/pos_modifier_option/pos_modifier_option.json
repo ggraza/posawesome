@@ -1,0 +1,51 @@
+{
+ "actions": [],
+ "creation": "2026-11-26 16:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "option",
+  "item",
+  "is_default"
+ ],
+ "fields": [
+  {
+   "fieldname": "option",
+   "fieldtype": "Data",
+   "label": "Option",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 4,
+   "description": "What the kitchen reads, e.g. Medium Rare, No Onion, Extra Cheese"
+  },
+  {
+   "fieldname": "item",
+   "fieldtype": "Link",
+   "label": "Paid Add-on Item",
+   "options": "Item",
+   "in_list_view": 1,
+   "columns": 4,
+   "description": "Optional. When set, choosing this option adds this item to the bill at its own price."
+  },
+  {
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "label": "Selected By Default",
+   "in_list_view": 1,
+   "columns": 2
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-26 16:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Modifier Option",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "istable": 1,
+ "editable_grid": 1
+}

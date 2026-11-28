@@ -1,0 +1,96 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "field:expense",
+ "creation": "2024-09-26 13:47:02.467234",
+ "default_view": "List",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "expense",
+  "column_break_a9gos",
+  "disable",
+  "section_break_hkinx",
+  "pos_expense_head_default"
+ ],
+ "fields": [
+  {
+   "default": "{expense}",
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Title",
+   "no_copy": 1,
+   "print_hide": 1
+  },
+  {
+   "fieldname": "expense",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Expense",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "columns": 1,
+   "default": "0",
+   "fieldname": "disable",
+   "fieldtype": "Check",
+   "in_filter": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Disable"
+  },
+  {
+   "fieldname": "column_break_a9gos",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_hkinx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "pos_expense_head_default",
+   "fieldtype": "Table",
+   "label": "POS Expense Head Default",
+   "options": "POS Expense Default",
+   "reqd": 1
+  }
+ ],
+ "icon": "fa fa-credit-card",
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-10 04:15:57.497995",
+ "modified_by": "Administrator",
+ "module": "POSAwesome",
+ "name": "POS Expense Head",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  }
+ ],
+ "quick_entry": 1,
+ "show_name_in_global_search": 1,
+ "sort_field": "modified",
+ "sort_order": "ASC",
+ "states": [],
+ "title_field": "title"
+}
